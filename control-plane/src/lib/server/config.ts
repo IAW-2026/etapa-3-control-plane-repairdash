@@ -30,7 +30,7 @@ export const ENV = {
 export function rdHeaders()   { return { 'x-api-key': ENV.repairdash.key }; }
 export function drHeaders()   { return { 'x-control-plane-api-key': ENV.driver.key }; }
 export function pmHeaders()   { return { 'x-control-plane-api-key': ENV.payments.key }; }
-export function fbHeaders()   { return { 'x-control-plane-api-key': ENV.feedback.key }; }
+export function fbHeaders()   { return { 'x-api-key': ENV.feedback.key }; }
 export function promoHeaders(){ return { 'x-api-key': ENV.promociones.key }; }
 
 export function actor() {
