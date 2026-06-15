@@ -3,8 +3,8 @@ import { useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getBadge, STATUS_META, TONES, fdate } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
+import { Pagination } from '@/components/table/Pagination';
 
-const PAGE_SIZE = 20;
 const fmt = (v: number | null | undefined) => (v == null ? '—' : v);
 
 export function FeedbackView() {
@@ -24,7 +24,6 @@ export function FeedbackView() {
   const filtered = data.reports;
   const total = serverTotal;
   const totalPages = Math.max(1, serverTotalPages);
-  const currentPage = Math.min(page, totalPages);
 
   const fb = summary?.feedback;
   const summaryCards = [
@@ -137,17 +136,7 @@ export function FeedbackView() {
           <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>Sin reportes para los filtros aplicados.</div>
         )}
 
-        {/* Pagination */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 16px', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>
-            {total === 0 ? '0 de 0' : `${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, total)} de ${total}`}
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button className="btn-table" style={{ opacity: currentPage <= 1 ? .4 : 1, pointerEvents: currentPage <= 1 ? 'none' : 'auto' }} onClick={() => dispatch({ type: 'SET_PAGE', payload: Math.max(1, currentPage - 1) })}>Anterior</button>
-            <span style={{ fontSize: 12.5, color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>{currentPage} / {totalPages}</span>
-            <button className="btn-table" style={{ opacity: currentPage >= totalPages ? .4 : 1, pointerEvents: currentPage >= totalPages ? 'none' : 'auto' }} onClick={() => dispatch({ type: 'SET_PAGE', payload: Math.min(totalPages, currentPage + 1) })}>Siguiente</button>
-          </div>
-        </div>
+        <Pagination page={page} totalPages={totalPages} total={total} />
       </div>
     </div>
   );

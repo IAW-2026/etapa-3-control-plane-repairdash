@@ -17,6 +17,13 @@
   ::-webkit-scrollbar-track { background: transparent; }
 }
 
+/* ── Fonts (self-hosted Jakarta + system monospace, no Google Fonts) ── */
+:root {
+  --font-grotesk: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  --font-instrument: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+}
+
 /* ── Design tokens dark (default) ── */
 :root {
   --bg: #0D0913;

@@ -1,26 +1,22 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useStore } from '@/lib/store';
+import { useEffect, useState, ReactNode } from 'react';
+import { StoreProvider, useStore } from '@/lib/store';
 import { Sidebar } from './layout/Sidebar';
 import { Header } from './layout/Header';
-import { Dashboard } from './views/Dashboard';
-import { TableView } from './views/TableView';
-import { CommissionView } from './views/CommissionView';
-import { FeedbackView } from './views/FeedbackView';
-import { ClienteModal } from './modals/ClienteModal';
-import { WorkerModal } from './modals/WorkerModal';
-import { ServiceModal } from './modals/ServiceModal';
-import { PromoModal } from './modals/PromoModal';
-import { ConfirmModal } from './modals/ConfirmModal';
-import { ReportModal } from './modals/ReportModal';
+import { ClienteModal } from '@/features/repairdash/ClienteModal';
+import { WorkerModal } from '@/features/driver/WorkerModal';
+import { ServiceModal } from '@/features/driver/ServiceModal';
+import { PromoModal } from '@/features/promotions/PromoModal';
+import { ReportModal } from '@/features/feedback/ReportModal';
+import { ConfirmModal } from './common/ConfirmModal';
 import { Toast } from './ui/Toast';
-import type { Route } from '@/lib/types';
 
-const TABLE_ROUTES: Route[] = ['clientes','workers','pdrivers','priders','jobs','viajes','services','transactions','withdrawals','promotions','historial'];
-
-export function ControlPlane() {
+// Persistent chrome shared by every page: sidebar, header, modals and toast.
+// Lives inside a layout so it stays mounted across client-side navigations.
+// The actual section content is rendered through `children` by each page.
+function Chrome({ children }: { children: ReactNode }) {
   const { state, dispatch } = useStore();
-  const { theme, route, sidebarOpen } = state;
+  const { theme, sidebarOpen } = state;
   const [winW, setWinW] = useState(1280);
 
   useEffect(() => {
@@ -57,10 +53,7 @@ export function ControlPlane() {
         <Header isMobile={isMobile} />
 
         <main style={{ flex: 1, overflowY: 'auto', padding: 'clamp(16px, 3vw, 30px)' }}>
-          {route === 'dashboard' && <Dashboard />}
-          {TABLE_ROUTES.includes(route) && <TableView route={route} />}
-          {route === 'commission' && <CommissionView />}
-          {route === 'feedback' && <FeedbackView />}
+          {children}
         </main>
       </div>
 
@@ -75,5 +68,13 @@ export function ControlPlane() {
       {/* Toast */}
       <Toast />
     </div>
+  );
+}
+
+export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <StoreProvider>
+      <Chrome>{children}</Chrome>
+    </StoreProvider>
   );
 }

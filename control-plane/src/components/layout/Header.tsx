@@ -1,5 +1,7 @@
 'use client';
+import { usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
+import { routeFromPath } from '@/lib/routes';
 
 const ROUTE_META: Record<string, { group: string; title: string }> = {
   dashboard:    { group: 'Visión',      title: 'Dashboard' },
@@ -20,7 +22,8 @@ const ROUTE_META: Record<string, { group: string; title: string }> = {
 
 export function Header({ isMobile }: { isMobile: boolean }) {
   const { state, dispatch, setTheme } = useStore();
-  const { route, theme } = state;
+  const { theme } = state;
+  const route = routeFromPath(usePathname());
   const meta = ROUTE_META[route] || ROUTE_META.dashboard;
 
   return (

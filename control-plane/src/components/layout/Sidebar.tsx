@@ -1,5 +1,9 @@
 'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { UserButton, useUser } from '@clerk/nextjs';
 import { useStore } from '@/lib/store';
+import { ROUTE_PATH } from '@/lib/routes';
 import type { Route } from '@/lib/types';
 
 const NAV_GROUPS = [
@@ -43,8 +47,10 @@ const NAV_GROUPS = [
 ];
 
 export function Sidebar({ isMobile }: { isMobile: boolean }) {
-  const { state, navigate } = useStore();
-  const { route, sidebarOpen } = state;
+  const { state, dispatch } = useStore();
+  const { sidebarOpen } = state;
+  const pathname = usePathname();
+  const { user } = useUser();
 
   const sidebarStyle: React.CSSProperties = {
     width: 256, flexShrink: 0, display: 'flex', flexDirection: 'column',
@@ -80,15 +86,16 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
               {g.title}
             </div>
             {g.items.map(it => {
-              const active = route === it.id;
+              const active = pathname === ROUTE_PATH[it.id];
               return (
-                <div
+                <Link
                   key={it.id}
-                  onClick={() => navigate(it.id)}
+                  href={ROUTE_PATH[it.id]}
+                  onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                    margin: '1px 10px', fontSize: 14,
+                    margin: '1px 10px', fontSize: 14, textDecoration: 'none',
                     color: active ? 'var(--text)' : 'var(--text2)',
                     fontWeight: active ? 600 : 400,
                     background: active ? 'var(--violet-soft)' : 'transparent',
@@ -99,7 +106,7 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
                 >
                   <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: it.dot }} />
                   <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.label}</span>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -117,15 +124,10 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--violet), var(--pink))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 700, color: '#FFF', flexShrink: 0,
-          }}>SA</div>
+          <UserButton />
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Súper admin</span>
-            <span style={{ fontSize: 11.5, color: 'var(--text3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>admin@controlplane.app</span>
+            <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.fullName || user?.firstName || 'Súper admin'}</span>
+            <span style={{ fontSize: 11.5, color: 'var(--text3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.primaryEmailAddress?.emailAddress || ''}</span>
           </div>
         </div>
       </div>

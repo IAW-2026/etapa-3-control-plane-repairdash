@@ -155,7 +155,6 @@ function routeDataKey(route: Route): keyof AppData | null {
 interface StoreCtx {
   state: State;
   dispatch: React.Dispatch<Action>;
-  navigate: (r: Route) => void;
   setTheme: (t: Theme) => void;
   showToast: (method: string, path: string, msg: string) => void;
   closeModal: () => void;
@@ -179,11 +178,6 @@ const Ctx = createContext<StoreCtx | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, getInitialState);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const navigate = useCallback((r: Route) => {
-    dispatch({ type: 'SET_ROUTE', payload: r });
-    try { localStorage.setItem('cp-route', r); } catch { /* */ }
-  }, []);
 
   const setTheme = useCallback((t: Theme) => {
     dispatch({ type: 'SET_THEME', payload: t });
@@ -275,7 +269,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Re-fetch the current section (and optionally the consolidated summary)
+  // after a successful mutation, so the UI reflects the server's truth rather
+  // than an optimistic guess. Reuses the existing fetchers with the filters
+  // currently held in state.
+  const revalidate = useCallback((route: Route, withSummary = false) => {
+    fetchRouteData(route, {
+      q: state.q, status: state.status, resFilter: state.resFilter,
+      dateFrom: state.dateFrom, dateTo: state.dateTo, page: state.page,
+    });
+    if (withSummary) fetchSummary();
+  }, [state.q, state.status, state.resFilter, state.dateFrom, state.dateTo, state.page, fetchRouteData, fetchSummary]);
+
   // ─── Mutations ────────────────────────────────────────────────────────────
+  // Critical admin mutations only touch local state AFTER a 2xx response, then
+  // revalidate against the server. A network error or non-2xx response shows a
+  // toast and leaves the UI unchanged (no optimistic updates).
   const saveCliente = useCallback(async () => {
     const { form, modal, data } = state;
     if (modal?.type !== 'cliente') return;
@@ -303,34 +312,39 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }});
       dispatch({ type: 'SET_MODAL', payload: null });
       showToast('PUT', '/api/super-admin/clientes/' + modal.id, 'Cliente actualizado');
+      revalidate('clientes');
     } catch {
-      // fallback: optimistic update
-      dispatch({ type: 'UPDATE_DATA', payload: {
-        clientes: data.clientes.map(c => c.id_clerk === modal.id
-          ? { ...c, nombre: nombre || c.nombre, apellido: apellido || c.apellido }
-          : c)
-      }});
-      dispatch({ type: 'SET_MODAL', payload: null });
-      showToast('PUT', '/api/super-admin/clientes/' + modal.id, 'Cliente actualizado (offline)');
+      dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red — no se aplicó el cambio.' });
     }
-  }, [state, showToast]);
+  }, [state, showToast, revalidate]);
 
   const saveWorker = useCallback(async () => {
     const { modal, data } = state;
     if (modal?.type !== 'worker') return;
+    const path = '/api/control-plane/workers/' + modal.id + '/status';
+    let res: Response;
     try {
-      await fetch(`/api/cp/workers/${encodeURIComponent(modal.id)}/status`, {
+      res = await fetch(`/api/cp/workers/${encodeURIComponent(modal.id)}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: modal.status }),
       });
-    } catch { /* fallthrough to optimistic */ }
+    } catch {
+      showToast('PATCH', path, 'Error de red — el estado no se cambió');
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast('PATCH', path, `Error ${res.status}: ${err.message || err.error || 'no se pudo cambiar el estado'}`);
+      return;
+    }
     dispatch({ type: 'UPDATE_DATA', payload: {
       workers: data.workers.map(w => w.id === modal.id ? { ...w, status: modal.status } : w)
     }});
     dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('PATCH', '/api/control-plane/workers/' + modal.id + '/status', 'Estado actualizado a ' + modal.status);
-  }, [state, showToast]);
+    showToast('PATCH', path, 'Estado actualizado a ' + modal.status);
+    revalidate('workers');
+  }, [state, showToast, revalidate]);
 
   const saveService = useCallback(async () => {
     const { form, modal, data } = state;
@@ -359,6 +373,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: data.serviceTypes.map(t => t.id === modal.id ? updated : t) }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast('PATCH', '/api/control-plane/service-types/' + modal.id, 'Tipo de servicio actualizado');
+        revalidate('services');
       } else {
         const res = await fetch('/api/cp/services', {
           method: 'POST',
@@ -376,11 +391,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: [nuevo, ...data.serviceTypes] }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast('POST', '/api/control-plane/service-types', 'Tipo de servicio creado');
+        revalidate('services');
       }
     } catch {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red. Verificá la conexión.' });
     }
-  }, [state, showToast]);
+  }, [state, showToast, revalidate]);
 
   const saveCommission = useCallback(async () => {
     const v = state.commissionInput.trim();
@@ -389,26 +405,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
     const rate = parseFloat(v).toFixed(2);
+    let res: Response;
     try {
-      const res = await fetch('/api/cp/commission', {
+      res = await fetch('/api/cp/commission', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commissionRate: rate }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        dispatch({ type: 'SET_COMMISSION_ERROR', payload: err.message || err.error || `Error ${res.status}` });
-        return;
-      }
-      const json = await res.json();
-      const commission: Commission = json.data || { rate, updatedAt: new Date().toISOString() };
-      dispatch({ type: 'UPDATE_DATA', payload: { commission } });
     } catch {
-      dispatch({ type: 'UPDATE_DATA', payload: { commission: { rate, updatedAt: new Date().toISOString() } } });
+      dispatch({ type: 'SET_COMMISSION_ERROR', payload: 'Error de red — la comisión no se actualizó.' });
+      return;
     }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      dispatch({ type: 'SET_COMMISSION_ERROR', payload: err.message || err.error || `Error ${res.status}` });
+      return;
+    }
+    const json = await res.json();
+    const commission: Commission = json.data || { rate, updatedAt: new Date().toISOString() };
+    dispatch({ type: 'UPDATE_DATA', payload: { commission } });
     dispatch({ type: 'SET_COMMISSION_INPUT', payload: '' });
     showToast('PATCH', '/api/control-plane/commission', 'Comisión actualizada a ' + rate + '%');
-  }, [state, showToast]);
+    fetchCommission();
+  }, [state, showToast, fetchCommission]);
 
   const savePromo = useCallback(async () => {
     const { form, modal, data } = state;
@@ -452,6 +471,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'UPDATE_DATA', payload: { promotions: data.promotions.map(p => p.id === modal.id ? updated : p) }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast('PATCH', '/api/admin/promociones/' + modal.id, 'Promoción actualizada');
+        revalidate('promotions');
       } else {
         const res = await fetch('/api/cp/promotions', {
           method: 'POST',
@@ -469,22 +489,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'UPDATE_DATA', payload: { promotions: [nueva, ...data.promotions] }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast('POST', '/api/admin/promociones', 'Promoción creada (#' + (json.data?.id ?? nextId) + ')');
+        revalidate('promotions');
       }
     } catch {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red. Verificá la conexión.' });
     }
-  }, [state, showToast]);
+  }, [state, showToast, revalidate]);
 
   const saveResolve = useCallback(async () => {
     const { modal, data } = state;
     if (modal?.type !== 'report' || !modal.decision) return;
+    const path = '/api/control-plane/reports/' + modal.id + '/resolve';
+    let res: Response;
     try {
-      await fetch(`/api/cp/reports/${encodeURIComponent(modal.id)}/resolve`, {
+      res = await fetch(`/api/cp/reports/${encodeURIComponent(modal.id)}/resolve`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision: modal.decision }),
       });
-    } catch { /* fallthrough */ }
+    } catch {
+      showToast('PATCH', path, 'Error de red — la disputa no se resolvió');
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast('PATCH', path, `Error ${res.status}: ${err.message || err.error || 'no se pudo resolver'}`);
+      return;
+    }
     dispatch({ type: 'UPDATE_DATA', payload: {
       reports: data.reports.map(r => r.id === modal.id
         ? { ...r, estado: 'RESUELTO' as const, resolucion: 'Resuelto' as const, decision: modal.decision }
@@ -496,17 +527,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }});
     }
     dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('PATCH', '/api/control-plane/reports/' + modal.id + '/resolve', 'Disputa resuelta — fallo ' + (modal.decision === 'AFavor' ? 'a favor' : 'en contra'));
-  }, [state, showToast]);
+    showToast('PATCH', path, 'Disputa resuelta — fallo ' + (modal.decision === 'AFavor' ? 'a favor' : 'en contra'));
+    revalidate('feedback', true);
+  }, [state, showToast, revalidate]);
 
   const deleteCliente = useCallback(async (id: string) => {
+    const path = '/api/super-admin/clientes/' + id;
+    let res: Response;
     try {
-      await fetch(`/api/cp/clientes/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    } catch { /* fallthrough */ }
+      res = await fetch(`/api/cp/clientes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch {
+      showToast('DELETE', path, 'Error de red — el cliente no se eliminó');
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast('DELETE', path, `Error ${res.status}: ${err.message || err.error || 'no se pudo eliminar'}`);
+      return;
+    }
     dispatch({ type: 'UPDATE_DATA', payload: { clientes: state.data.clientes.filter(c => c.id_clerk !== id) }});
     dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('DELETE', '/api/super-admin/clientes/' + id, 'Cliente eliminado');
-  }, [state.data.clientes, showToast]);
+    showToast('DELETE', path, 'Cliente eliminado');
+    revalidate('clientes');
+  }, [state.data.clientes, showToast, revalidate]);
 
   const deleteService = useCallback(async (id: string) => {
     try {
@@ -517,28 +560,42 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         showToast('DELETE', '/api/control-plane/service-types/' + id, `Error ${res.status}: ${err.message || err.error || 'no se pudo eliminar'}`);
         return;
       }
-    } catch { /* fallthrough to local */ }
+    } catch {
+      showToast('DELETE', '/api/control-plane/service-types/' + id, 'Error de red — el tipo de servicio no se eliminó');
+      return;
+    }
     dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: state.data.serviceTypes.filter(t => t.id !== id) }});
     dispatch({ type: 'SET_MODAL', payload: null });
     showToast('DELETE', '/api/control-plane/service-types/' + id, 'Tipo de servicio eliminado');
-  }, [state.data.serviceTypes, showToast]);
+    revalidate('services');
+  }, [state.data.serviceTypes, showToast, revalidate]);
 
   const deletePromo = useCallback(async (id: number) => {
+    const path = '/api/admin/promociones/' + id;
+    let res: Response;
     try {
-      await fetch(`/api/cp/promotions/${encodeURIComponent(String(id))}`, { method: 'DELETE' });
-    } catch { /* fallthrough */ }
+      res = await fetch(`/api/cp/promotions/${encodeURIComponent(String(id))}`, { method: 'DELETE' });
+    } catch {
+      showToast('DELETE', path, 'Error de red — la promoción no se eliminó');
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast('DELETE', path, `Error ${res.status}: ${err.message || err.error || 'no se pudo eliminar'}`);
+      return;
+    }
     dispatch({ type: 'UPDATE_DATA', payload: { promotions: state.data.promotions.map(p => p.id === id ? { ...p, eliminada: true } : p) }});
     dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('DELETE', '/api/admin/promociones/' + id, 'Promoción eliminada (soft delete)');
-  }, [state.data.promotions, showToast]);
+    showToast('DELETE', path, 'Promoción eliminada (soft delete)');
+    revalidate('promotions');
+  }, [state.data.promotions, showToast, revalidate]);
 
-  // Apply persisted theme/route once, after hydration.
+  // Apply persisted theme once, after hydration. The active section is now
+  // driven by the URL (Next.js routing), not by localStorage.
   useEffect(() => {
     try {
       const t = localStorage.getItem('cp-theme');
       if (t === 'light') dispatch({ type: 'SET_THEME', payload: 'light' });
-      const r = localStorage.getItem('cp-route') as Route | null;
-      if (r) dispatch({ type: 'SET_ROUTE', payload: r });
     } catch { /* */ }
   }, []);
 
@@ -546,7 +603,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      state, dispatch, navigate, setTheme, showToast, closeModal,
+      state, dispatch, setTheme, showToast, closeModal,
       fetchRouteData, fetchSummary, fetchCommission, fetchReportDetail,
       saveCliente, saveWorker, saveService, saveCommission, savePromo, saveResolve,
       deleteCliente, deleteService, deletePromo,

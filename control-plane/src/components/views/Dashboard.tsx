@@ -1,15 +1,20 @@
 'use client';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
+import { ROUTE_PATH } from '@/lib/routes';
 import { fdate, STATUS_META } from '@/lib/utils';
+import type { Route } from '@/lib/types';
 
 const n = (v: number | null | undefined) => (v == null ? '—' : v);
 const sumValues = (o: Record<string, number> | null | undefined) =>
   o ? Object.values(o).reduce((a, b) => a + b, 0) : null;
 
 export function Dashboard() {
-  const { state, navigate, fetchSummary } = useStore();
+  const { state, fetchSummary } = useStore();
   const { summary, summaryLoading } = state;
+  const router = useRouter();
+  const go = (r: Route) => router.push(ROUTE_PATH[r]);
 
   // Consolidated operative state from /api/cp/summary (RepairDash, DriverApp,
   // Payments, Feedback and Promociones).
@@ -39,7 +44,7 @@ export function Dashboard() {
         { val: n(rd?.clientes), label: 'Clientes' },
         { val: n(rd?.viajes), label: 'Viajes' },
       ],
-      links: [{ label: 'Clientes →', color: 'var(--pink)', go: () => navigate('clientes') }, { label: 'Viajes →', color: 'var(--pink)', go: () => navigate('viajes') }],
+      links: [{ label: 'Clientes →', color: 'var(--pink)', go: () => go('clientes') }, { label: 'Viajes →', color: 'var(--pink)', go: () => go('viajes') }],
     },
     {
       name: 'DriverApp', dot: 'var(--violet)',
@@ -48,7 +53,7 @@ export function Dashboard() {
         { val: n(dr?.workers?.online), label: 'Online', color: 'var(--ok)' },
         { val: n(dr?.jobs?.activos), label: 'Trabajos activos' },
       ],
-      links: [{ label: 'Trabajadores →', color: 'var(--violet)', go: () => navigate('workers') }, { label: 'Trabajos →', color: 'var(--violet)', go: () => navigate('jobs') }],
+      links: [{ label: 'Trabajadores →', color: 'var(--violet)', go: () => go('workers') }, { label: 'Trabajos →', color: 'var(--violet)', go: () => go('jobs') }],
     },
     {
       name: 'Payments', dot: 'var(--mag)',
@@ -57,7 +62,7 @@ export function Dashboard() {
         { val: n(sumWdRequested), label: 'Retiros pend.', color: 'var(--warn)' },
         { val: commissionRate == null ? '—' : commissionRate + '%', label: 'Comisión' },
       ],
-      links: [{ label: 'Transacciones →', color: 'var(--mag)', go: () => navigate('transactions') }, { label: 'Retiros →', color: 'var(--mag)', go: () => navigate('withdrawals') }],
+      links: [{ label: 'Transacciones →', color: 'var(--mag)', go: () => go('transactions') }, { label: 'Retiros →', color: 'var(--mag)', go: () => go('withdrawals') }],
     },
     {
       name: 'Feedback', dot: 'var(--pink)',
@@ -66,7 +71,7 @@ export function Dashboard() {
         { val: n(fb?.reportesEnRevision), label: 'En revisión', color: 'var(--violet)' },
         { val: n(fb?.reportesResueltos), label: 'Resueltos' },
       ],
-      links: [{ label: 'Disputas →', color: 'var(--pink)', go: () => navigate('feedback') }],
+      links: [{ label: 'Disputas →', color: 'var(--pink)', go: () => go('feedback') }],
     },
     {
       name: 'Promociones', dot: 'var(--pink)',
@@ -74,7 +79,7 @@ export function Dashboard() {
         { val: n(promo?.total), label: 'Promociones', color: 'var(--ok)' },
         { val: n(promo?.usos), label: 'Usos' },
       ],
-      links: [{ label: 'Promociones →', color: 'var(--pink)', go: () => navigate('promotions') }, { label: 'Historial →', color: 'var(--pink)', go: () => navigate('historial') }],
+      links: [{ label: 'Promociones →', color: 'var(--pink)', go: () => go('promotions') }, { label: 'Historial →', color: 'var(--pink)', go: () => go('historial') }],
     },
   ];
 
@@ -141,7 +146,7 @@ export function Dashboard() {
               {commissionUpdated && <span style={{ fontSize: 12, color: 'var(--text3)' }}>act. {fdate(commissionUpdated)}</span>}
             </div>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--text2)' }}>Única mutación habilitada por Payments en v1. Se aplica a las transacciones liquidadas.</p>
-            <button onClick={() => navigate('commission')} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: 4 }}>
+            <button onClick={() => go('commission')} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: 4 }}>
               Ajustar comisión
             </button>
           </div>
@@ -151,7 +156,7 @@ export function Dashboard() {
               <span style={{ fontSize: 14, fontWeight: 600 }}>{n(sumWdRequested)} retiros solicitados</span>
               <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>Solo lectura — se aprueban en el admin de Payments.</span>
             </div>
-            <span onClick={() => navigate('withdrawals')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--mag)', cursor: 'pointer', whiteSpace: 'nowrap' }}>Revisar →</span>
+            <span onClick={() => go('withdrawals')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--mag)', cursor: 'pointer', whiteSpace: 'nowrap' }}>Revisar →</span>
           </div>
         </div>
       </div>
