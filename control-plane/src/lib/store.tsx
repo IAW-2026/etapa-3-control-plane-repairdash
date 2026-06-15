@@ -1,0 +1,563 @@
+'use client';
+import { createContext, useCallback, useContext, useEffect, useReducer, useRef, ReactNode } from 'react';
+import { emptyData } from './data';
+import type { AppData, Commission, FormState, ModalType, Report, Route, ServiceType, SummaryData, Theme, Toast } from './types';
+
+interface State {
+  theme: Theme;
+  route: Route;
+  q: string;
+  status: string;
+  resFilter: string;
+  dateFrom: string;
+  dateTo: string;
+  page: number;
+  sidebarOpen: boolean;
+  modal: ModalType | null;
+  form: FormState;
+  formError: string;
+  commissionInput: string;
+  commissionError: string;
+  toast: Toast | null;
+  data: AppData;
+  loading: boolean;
+  serverTotal: number;
+  totalPages: number;
+  summary: SummaryData | null;
+  summaryLoading: boolean;
+  reportDetail: Report | null;
+  reportLoading: boolean;
+}
+
+type Action =
+  | { type: 'SET_THEME'; payload: Theme }
+  | { type: 'SET_ROUTE'; payload: Route }
+  | { type: 'SET_Q'; payload: string }
+  | { type: 'SET_STATUS'; payload: string }
+  | { type: 'SET_RES_FILTER'; payload: string }
+  | { type: 'SET_DATE_FROM'; payload: string }
+  | { type: 'SET_DATE_TO'; payload: string }
+  | { type: 'SET_PAGE'; payload: number }
+  | { type: 'TOGGLE_SIDEBAR' }
+  | { type: 'CLOSE_SIDEBAR' }
+  | { type: 'SET_MODAL'; payload: ModalType | null }
+  | { type: 'SET_MODAL_DECISION'; payload: 'AFavor' | 'EnContra' }
+  | { type: 'SET_MODAL_WORKER_STATUS'; payload: 'ONLINE' | 'OFFLINE' | 'EN_TRABAJO' }
+  | { type: 'SET_FORM'; payload: FormState }
+  | { type: 'SET_FORM_FIELD'; payload: { key: keyof FormState; value: FormState[keyof FormState] } }
+  | { type: 'SET_FORM_ERROR'; payload: string }
+  | { type: 'SET_COMMISSION_INPUT'; payload: string }
+  | { type: 'SET_COMMISSION_ERROR'; payload: string }
+  | { type: 'SET_TOAST'; payload: Toast | null }
+  | { type: 'SET_DATA'; payload: AppData }
+  | { type: 'UPDATE_DATA'; payload: Partial<AppData> }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_SERVER_TOTAL'; payload: number }
+  | { type: 'SET_TOTAL_PAGES'; payload: number }
+  | { type: 'SET_SUMMARY'; payload: SummaryData | null }
+  | { type: 'SET_SUMMARY_LOADING'; payload: boolean }
+  | { type: 'SET_REPORT_DETAIL'; payload: Report | null }
+  | { type: 'SET_REPORT_LOADING'; payload: boolean };
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'SET_THEME': return { ...state, theme: action.payload };
+    case 'SET_ROUTE': return { ...state, route: action.payload, q: '', status: 'ALL', resFilter: 'ALL', page: 1, dateFrom: '', dateTo: '', sidebarOpen: false, loading: false };
+    case 'SET_Q': return { ...state, q: action.payload, page: 1 };
+    case 'SET_STATUS': return { ...state, status: action.payload, page: 1 };
+    case 'SET_RES_FILTER': return { ...state, resFilter: action.payload };
+    case 'SET_DATE_FROM': return { ...state, dateFrom: action.payload, page: 1 };
+    case 'SET_DATE_TO': return { ...state, dateTo: action.payload, page: 1 };
+    case 'SET_PAGE': return { ...state, page: action.payload };
+    case 'TOGGLE_SIDEBAR': return { ...state, sidebarOpen: !state.sidebarOpen };
+    case 'CLOSE_SIDEBAR': return { ...state, sidebarOpen: false };
+    case 'SET_MODAL': return { ...state, modal: action.payload, formError: '' };
+    case 'SET_MODAL_DECISION':
+      if (!state.modal || state.modal.type !== 'report') return state;
+      return { ...state, modal: { ...state.modal, decision: action.payload } };
+    case 'SET_MODAL_WORKER_STATUS':
+      if (!state.modal || state.modal.type !== 'worker') return state;
+      return { ...state, modal: { ...state.modal, status: action.payload } };
+    case 'SET_FORM': return { ...state, form: action.payload };
+    case 'SET_FORM_FIELD': return { ...state, form: { ...state.form, [action.payload.key]: action.payload.value } };
+    case 'SET_FORM_ERROR': return { ...state, formError: action.payload };
+    case 'SET_COMMISSION_INPUT': return { ...state, commissionInput: action.payload, commissionError: '' };
+    case 'SET_COMMISSION_ERROR': return { ...state, commissionError: action.payload };
+    case 'SET_TOAST': return { ...state, toast: action.payload };
+    case 'SET_DATA': return { ...state, data: action.payload };
+    case 'UPDATE_DATA': return { ...state, data: { ...state.data, ...action.payload } };
+    case 'SET_LOADING': return { ...state, loading: action.payload };
+    case 'SET_SERVER_TOTAL': return { ...state, serverTotal: action.payload };
+    case 'SET_TOTAL_PAGES': return { ...state, totalPages: action.payload };
+    case 'SET_SUMMARY': return { ...state, summary: action.payload };
+    case 'SET_SUMMARY_LOADING': return { ...state, summaryLoading: action.payload };
+    case 'SET_REPORT_DETAIL': return { ...state, reportDetail: action.payload };
+    case 'SET_REPORT_LOADING': return { ...state, reportLoading: action.payload };
+    default: return state;
+  }
+}
+
+function getInitialState(): State {
+  // Always start from the same defaults on server and client to avoid hydration
+  // mismatches. Persisted theme/route are applied in an effect after mount.
+  const theme: Theme = 'dark';
+  const route: Route = 'dashboard';
+  return {
+    theme, route, q: '', status: 'ALL', resFilter: 'ALL',
+    dateFrom: '', dateTo: '', page: 1,
+    sidebarOpen: false, modal: null, form: {}, formError: '',
+    commissionInput: '', commissionError: '', toast: null,
+    data: emptyData(),
+    loading: false, serverTotal: 0, totalPages: 1,
+    summary: null, summaryLoading: false,
+    reportDetail: null, reportLoading: false,
+  };
+}
+
+export type FetchParams = { q: string; status: string; resFilter: string; dateFrom: string; dateTo: string; page: number };
+
+function routeEndpoint(route: Route): string | null {
+  const map: Partial<Record<Route, string>> = {
+    clientes:     '/api/cp/clientes',
+    viajes:       '/api/cp/viajes',
+    workers:      '/api/cp/workers',
+    jobs:         '/api/cp/jobs',
+    services:     '/api/cp/services',
+    pdrivers:     '/api/cp/pdrivers',
+    priders:      '/api/cp/priders',
+    transactions: '/api/cp/transactions',
+    withdrawals:  '/api/cp/withdrawals',
+    promotions:   '/api/cp/promotions',
+    historial:    '/api/cp/historial',
+    feedback:     '/api/cp/reports',
+  };
+  return map[route] || null;
+}
+
+function routeDataKey(route: Route): keyof AppData | null {
+  const map: Partial<Record<Route, keyof AppData>> = {
+    clientes:     'clientes',
+    viajes:       'viajes',
+    workers:      'workers',
+    jobs:         'jobs',
+    services:     'serviceTypes',
+    pdrivers:     'pdrivers',
+    priders:      'priders',
+    transactions: 'transactions',
+    withdrawals:  'withdrawals',
+    promotions:   'promotions',
+    historial:    'promoHistory',
+    feedback:     'reports',
+  };
+  return map[route] || null;
+}
+
+interface StoreCtx {
+  state: State;
+  dispatch: React.Dispatch<Action>;
+  navigate: (r: Route) => void;
+  setTheme: (t: Theme) => void;
+  showToast: (method: string, path: string, msg: string) => void;
+  closeModal: () => void;
+  fetchRouteData: (route: Route, params: FetchParams) => Promise<void>;
+  fetchSummary: () => Promise<void>;
+  fetchCommission: () => Promise<void>;
+  fetchReportDetail: (id: string) => Promise<void>;
+  saveCliente: () => Promise<void>;
+  saveWorker: () => Promise<void>;
+  saveService: () => Promise<void>;
+  saveCommission: () => Promise<void>;
+  savePromo: () => Promise<void>;
+  saveResolve: () => Promise<void>;
+  deleteCliente: (id: string) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
+  deletePromo: (id: number) => Promise<void>;
+}
+
+const Ctx = createContext<StoreCtx | null>(null);
+
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, undefined, getInitialState);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const navigate = useCallback((r: Route) => {
+    dispatch({ type: 'SET_ROUTE', payload: r });
+    try { localStorage.setItem('cp-route', r); } catch { /* */ }
+  }, []);
+
+  const setTheme = useCallback((t: Theme) => {
+    dispatch({ type: 'SET_THEME', payload: t });
+    try { localStorage.setItem('cp-theme', t); } catch { /* */ }
+  }, []);
+
+  const showToast = useCallback((method: string, path: string, msg: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    dispatch({ type: 'SET_TOAST', payload: { method, path, msg } });
+    toastTimer.current = setTimeout(() => dispatch({ type: 'SET_TOAST', payload: null }), 4000);
+  }, []);
+
+  const closeModal = useCallback(() => dispatch({ type: 'SET_MODAL', payload: null }), []);
+
+  // ─── Data fetching ────────────────────────────────────────────────────────
+  const fetchRouteData = useCallback(async (route: Route, params: FetchParams) => {
+    const endpoint = routeEndpoint(route);
+    if (!endpoint) return;
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      const sp = new URLSearchParams();
+      if (params.q) sp.set('q', params.q);
+      if (params.status && params.status !== 'ALL') sp.set('status', params.status);
+      if (params.resFilter && params.resFilter !== 'ALL') sp.set('resFilter', params.resFilter);
+      if (params.dateFrom) sp.set('from', params.dateFrom);
+      if (params.dateTo)   sp.set('to',   params.dateTo);
+      sp.set('page', String(params.page));
+
+      const res = await fetch(`${endpoint}?${sp}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const key = routeDataKey(route);
+      if (key && Array.isArray(json.items)) {
+        dispatch({ type: 'UPDATE_DATA', payload: { [key]: json.items } });
+      }
+      dispatch({ type: 'SET_TOTAL_PAGES',  payload: json.totalPages ?? 1 });
+      dispatch({ type: 'SET_SERVER_TOTAL', payload: json.total ?? (json.items?.length ?? 0) });
+    } catch {
+      // keep existing seed data on error
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, []);
+
+  const fetchSummary = useCallback(async () => {
+    dispatch({ type: 'SET_SUMMARY_LOADING', payload: true });
+    try {
+      const res = await fetch('/api/cp/summary', { cache: 'no-store' });
+      if (!res.ok) return;
+      const json: SummaryData = await res.json();
+      dispatch({ type: 'SET_SUMMARY', payload: json });
+      // Keep the commission card in sync with the consolidated summary
+      const c = json.payments?.commission;
+      if (c?.commissionRate) {
+        dispatch({ type: 'UPDATE_DATA', payload: { commission: { rate: c.commissionRate, updatedAt: c.updatedAt } } });
+      }
+    } catch {
+      // leave summary as-is on error
+    } finally {
+      dispatch({ type: 'SET_SUMMARY_LOADING', payload: false });
+    }
+  }, []);
+
+  const fetchCommission = useCallback(async () => {
+    try {
+      const res = await fetch('/api/cp/commission', { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.data?.rate) {
+        dispatch({ type: 'UPDATE_DATA', payload: { commission: { rate: json.data.rate, updatedAt: json.data.updatedAt } } });
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const fetchReportDetail = useCallback(async (id: string) => {
+    dispatch({ type: 'SET_REPORT_DETAIL', payload: null });
+    dispatch({ type: 'SET_REPORT_LOADING', payload: true });
+    try {
+      const res = await fetch(`/api/cp/reports/${encodeURIComponent(id)}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.data) dispatch({ type: 'SET_REPORT_DETAIL', payload: json.data });
+    } catch {
+      // leave detail null on error
+    } finally {
+      dispatch({ type: 'SET_REPORT_LOADING', payload: false });
+    }
+  }, []);
+
+  // ─── Mutations ────────────────────────────────────────────────────────────
+  const saveCliente = useCallback(async () => {
+    const { form, modal, data } = state;
+    if (modal?.type !== 'cliente') return;
+    const nombre   = String(form.nombre   || '').trim();
+    const apellido = String(form.apellido || '').trim();
+    if (!nombre && !apellido) {
+      dispatch({ type: 'SET_FORM_ERROR', payload: 'Ingresá al menos un nombre o un apellido.' });
+      return;
+    }
+    try {
+      const res = await fetch(`/api/cp/clientes/${encodeURIComponent(modal.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: nombre || undefined, apellido: apellido || undefined }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || `Error ${res.status}` });
+        return;
+      }
+      const json = await res.json();
+      const updated = json.data;
+      dispatch({ type: 'UPDATE_DATA', payload: {
+        clientes: data.clientes.map(c => c.id_clerk === modal.id ? (updated || { ...c, nombre: nombre || c.nombre, apellido: apellido || c.apellido }) : c)
+      }});
+      dispatch({ type: 'SET_MODAL', payload: null });
+      showToast('PUT', '/api/super-admin/clientes/' + modal.id, 'Cliente actualizado');
+    } catch {
+      // fallback: optimistic update
+      dispatch({ type: 'UPDATE_DATA', payload: {
+        clientes: data.clientes.map(c => c.id_clerk === modal.id
+          ? { ...c, nombre: nombre || c.nombre, apellido: apellido || c.apellido }
+          : c)
+      }});
+      dispatch({ type: 'SET_MODAL', payload: null });
+      showToast('PUT', '/api/super-admin/clientes/' + modal.id, 'Cliente actualizado (offline)');
+    }
+  }, [state, showToast]);
+
+  const saveWorker = useCallback(async () => {
+    const { modal, data } = state;
+    if (modal?.type !== 'worker') return;
+    try {
+      await fetch(`/api/cp/workers/${encodeURIComponent(modal.id)}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: modal.status }),
+      });
+    } catch { /* fallthrough to optimistic */ }
+    dispatch({ type: 'UPDATE_DATA', payload: {
+      workers: data.workers.map(w => w.id === modal.id ? { ...w, status: modal.status } : w)
+    }});
+    dispatch({ type: 'SET_MODAL', payload: null });
+    showToast('PATCH', '/api/control-plane/workers/' + modal.id + '/status', 'Estado actualizado a ' + modal.status);
+  }, [state, showToast]);
+
+  const saveService = useCallback(async () => {
+    const { form, modal, data } = state;
+    if (modal?.type !== 'service') return;
+    const nombre   = String(form.nombre || '').trim();
+    const precio   = parseFloat(String(form.precio));
+    if (!nombre) { dispatch({ type: 'SET_FORM_ERROR', payload: 'El nombre es obligatorio.' }); return; }
+    if (!(precio > 0)) { dispatch({ type: 'SET_FORM_ERROR', payload: 'El precio base debe ser mayor a 0.' }); return; }
+    const body = { nombre, descripcion: String(form.descripcion || '').trim(), precioBase: precio };
+
+    try {
+      if (modal.id) {
+        const res = await fetch(`/api/cp/services/${encodeURIComponent(modal.id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (res.status === 409) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Conflicto: el nombre ya existe (409).' }); return; }
+          dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || `Error ${res.status}` });
+          return;
+        }
+        const json = await res.json();
+        const updated: ServiceType = json.data || { ...data.serviceTypes.find(t => t.id === modal.id)!, ...body };
+        dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: data.serviceTypes.map(t => t.id === modal.id ? updated : t) }});
+        dispatch({ type: 'SET_MODAL', payload: null });
+        showToast('PATCH', '/api/control-plane/service-types/' + modal.id, 'Tipo de servicio actualizado');
+      } else {
+        const res = await fetch('/api/cp/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (res.status === 409) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Ya existe un tipo de servicio con ese nombre (409).' }); return; }
+          dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || `Error ${res.status}` });
+          return;
+        }
+        const json = await res.json();
+        const nuevo: ServiceType = json.data || { id: 'tmp_' + Date.now(), ...body, drivers: 0, activos: 0 };
+        dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: [nuevo, ...data.serviceTypes] }});
+        dispatch({ type: 'SET_MODAL', payload: null });
+        showToast('POST', '/api/control-plane/service-types', 'Tipo de servicio creado');
+      }
+    } catch {
+      dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red. Verificá la conexión.' });
+    }
+  }, [state, showToast]);
+
+  const saveCommission = useCallback(async () => {
+    const v = state.commissionInput.trim();
+    if (!/^\d{1,3}(\.\d{1,2})?$/.test(v) || parseFloat(v) > 100) {
+      dispatch({ type: 'SET_COMMISSION_ERROR', payload: 'Valor inválido: decimal entre 0 y 100, hasta 2 decimales.' });
+      return;
+    }
+    const rate = parseFloat(v).toFixed(2);
+    try {
+      const res = await fetch('/api/cp/commission', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commissionRate: rate }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        dispatch({ type: 'SET_COMMISSION_ERROR', payload: err.message || err.error || `Error ${res.status}` });
+        return;
+      }
+      const json = await res.json();
+      const commission: Commission = json.data || { rate, updatedAt: new Date().toISOString() };
+      dispatch({ type: 'UPDATE_DATA', payload: { commission } });
+    } catch {
+      dispatch({ type: 'UPDATE_DATA', payload: { commission: { rate, updatedAt: new Date().toISOString() } } });
+    }
+    dispatch({ type: 'SET_COMMISSION_INPUT', payload: '' });
+    showToast('PATCH', '/api/control-plane/commission', 'Comisión actualizada a ' + rate + '%');
+  }, [state, showToast]);
+
+  const savePromo = useCallback(async () => {
+    const { form, modal, data } = state;
+    if (modal?.type !== 'promo') return;
+    const nombre = String(form.nombre || '').trim();
+    const valor  = parseFloat(String(form.valor));
+    if (!nombre) { dispatch({ type: 'SET_FORM_ERROR', payload: 'El nombre es obligatorio.' }); return; }
+    if (!(valor > 0)) { dispatch({ type: 'SET_FORM_ERROR', payload: 'El valor debe ser mayor a 0.' }); return; }
+    if (form.tipoDescuento === 'porcentaje' && valor > 100) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Un descuento porcentual no puede superar el 100%.' }); return; }
+    if (!form.fechaInicio) { dispatch({ type: 'SET_FORM_ERROR', payload: 'La fecha de inicio es obligatoria.' }); return; }
+    if (form.fechaFin && form.fechaFin < (form.fechaInicio || '')) { dispatch({ type: 'SET_FORM_ERROR', payload: 'La fecha de fin no puede ser anterior al inicio.' }); return; }
+
+    const toIso = (d: string | undefined, end: boolean) => d ? new Date(d + (end ? 'T23:59:59' : 'T00:00:00')).toISOString() : null;
+    const payload = {
+      nombre,
+      descripcion:   String(form.descripcion || '').trim(),
+      tipoDescuento: form.tipoDescuento || 'porcentaje' as const,
+      valor,
+      categorias:    form.categorias || [],
+      precioMinimo:  (form.precioMinimo === '' || form.precioMinimo == null) ? null : parseFloat(String(form.precioMinimo)),
+      destacada:     !!form.destacada,
+      usoUnico:      !!form.usoUnico,
+      fechaInicio:   toIso(form.fechaInicio, false) || new Date().toISOString(),
+      fechaFin:      toIso(form.fechaFin, true),
+    };
+
+    try {
+      if (modal.id !== null) {
+        const res = await fetch(`/api/cp/promotions/${encodeURIComponent(String(modal.id))}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          dispatch({ type: 'SET_FORM_ERROR', payload: err.error || `Error ${res.status}` });
+          return;
+        }
+        const json = await res.json();
+        const updated = json.data || { ...data.promotions.find(p => p.id === modal.id)!, ...payload };
+        dispatch({ type: 'UPDATE_DATA', payload: { promotions: data.promotions.map(p => p.id === modal.id ? updated : p) }});
+        dispatch({ type: 'SET_MODAL', payload: null });
+        showToast('PATCH', '/api/admin/promociones/' + modal.id, 'Promoción actualizada');
+      } else {
+        const res = await fetch('/api/cp/promotions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          dispatch({ type: 'SET_FORM_ERROR', payload: err.error || `Error ${res.status}` });
+          return;
+        }
+        const json = await res.json();
+        const nextId = Math.max(0, ...data.promotions.map(p => p.id)) + 1;
+        const nueva = json.data || { id: nextId, eliminada: false, filtroUsuarios: null, ...payload };
+        dispatch({ type: 'UPDATE_DATA', payload: { promotions: [nueva, ...data.promotions] }});
+        dispatch({ type: 'SET_MODAL', payload: null });
+        showToast('POST', '/api/admin/promociones', 'Promoción creada (#' + (json.data?.id ?? nextId) + ')');
+      }
+    } catch {
+      dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red. Verificá la conexión.' });
+    }
+  }, [state, showToast]);
+
+  const saveResolve = useCallback(async () => {
+    const { modal, data } = state;
+    if (modal?.type !== 'report' || !modal.decision) return;
+    try {
+      await fetch(`/api/cp/reports/${encodeURIComponent(modal.id)}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision: modal.decision }),
+      });
+    } catch { /* fallthrough */ }
+    dispatch({ type: 'UPDATE_DATA', payload: {
+      reports: data.reports.map(r => r.id === modal.id
+        ? { ...r, estado: 'RESUELTO' as const, resolucion: 'Resuelto' as const, decision: modal.decision }
+        : r)
+    }});
+    if (state.reportDetail && state.reportDetail.id === modal.id) {
+      dispatch({ type: 'SET_REPORT_DETAIL', payload: {
+        ...state.reportDetail, estado: 'RESUELTO', resolucion: 'Resuelto', decision: modal.decision,
+      }});
+    }
+    dispatch({ type: 'SET_MODAL', payload: null });
+    showToast('PATCH', '/api/control-plane/reports/' + modal.id + '/resolve', 'Disputa resuelta — fallo ' + (modal.decision === 'AFavor' ? 'a favor' : 'en contra'));
+  }, [state, showToast]);
+
+  const deleteCliente = useCallback(async (id: string) => {
+    try {
+      await fetch(`/api/cp/clientes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch { /* fallthrough */ }
+    dispatch({ type: 'UPDATE_DATA', payload: { clientes: state.data.clientes.filter(c => c.id_clerk !== id) }});
+    dispatch({ type: 'SET_MODAL', payload: null });
+    showToast('DELETE', '/api/super-admin/clientes/' + id, 'Cliente eliminado');
+  }, [state.data.clientes, showToast]);
+
+  const deleteService = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/cp/services/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        dispatch({ type: 'SET_MODAL', payload: null });
+        showToast('DELETE', '/api/control-plane/service-types/' + id, `Error ${res.status}: ${err.message || err.error || 'no se pudo eliminar'}`);
+        return;
+      }
+    } catch { /* fallthrough to local */ }
+    dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: state.data.serviceTypes.filter(t => t.id !== id) }});
+    dispatch({ type: 'SET_MODAL', payload: null });
+    showToast('DELETE', '/api/control-plane/service-types/' + id, 'Tipo de servicio eliminado');
+  }, [state.data.serviceTypes, showToast]);
+
+  const deletePromo = useCallback(async (id: number) => {
+    try {
+      await fetch(`/api/cp/promotions/${encodeURIComponent(String(id))}`, { method: 'DELETE' });
+    } catch { /* fallthrough */ }
+    dispatch({ type: 'UPDATE_DATA', payload: { promotions: state.data.promotions.map(p => p.id === id ? { ...p, eliminada: true } : p) }});
+    dispatch({ type: 'SET_MODAL', payload: null });
+    showToast('DELETE', '/api/admin/promociones/' + id, 'Promoción eliminada (soft delete)');
+  }, [state.data.promotions, showToast]);
+
+  // Apply persisted theme/route once, after hydration.
+  useEffect(() => {
+    try {
+      const t = localStorage.getItem('cp-theme');
+      if (t === 'light') dispatch({ type: 'SET_THEME', payload: 'light' });
+      const r = localStorage.getItem('cp-route') as Route | null;
+      if (r) dispatch({ type: 'SET_ROUTE', payload: r });
+    } catch { /* */ }
+  }, []);
+
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  return (
+    <Ctx.Provider value={{
+      state, dispatch, navigate, setTheme, showToast, closeModal,
+      fetchRouteData, fetchSummary, fetchCommission, fetchReportDetail,
+      saveCliente, saveWorker, saveService, saveCommission, savePromo, saveResolve,
+      deleteCliente, deleteService, deletePromo,
+    }}>
+      {children}
+    </Ctx.Provider>
+  );
+}
+
+export function useStore() {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error('useStore must be used within StoreProvider');
+  return ctx;
+}
