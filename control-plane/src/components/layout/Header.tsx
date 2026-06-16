@@ -4,20 +4,20 @@ import { useStore } from '@/lib/store';
 import { routeFromPath } from '@/lib/routes';
 
 const ROUTE_META: Record<string, { group: string; title: string }> = {
-  dashboard:    { group: 'Visión',      title: 'Dashboard' },
-  clientes:     { group: 'Usuarios',    title: 'Clientes' },
-  workers:      { group: 'Usuarios',    title: 'Trabajadores' },
-  pdrivers:     { group: 'Usuarios',    title: 'Drivers (billeteras)' },
-  priders:      { group: 'Usuarios',    title: 'Riders (pagos)' },
-  jobs:         { group: 'Operaciones', title: 'Trabajos' },
-  viajes:       { group: 'Operaciones', title: 'Viajes' },
-  services:     { group: 'Operaciones', title: 'Tipos de servicio' },
-  transactions: { group: 'Finanzas',    title: 'Transacciones' },
-  withdrawals:  { group: 'Finanzas',    title: 'Retiros' },
-  commission:   { group: 'Finanzas',    title: 'Comisión' },
-  promotions:   { group: 'Plataforma',  title: 'Promociones' },
-  historial:    { group: 'Plataforma',  title: 'Historial de promos' },
-  feedback:     { group: 'Plataforma',  title: 'Feedback y disputas' },
+  dashboard:    { group: 'Visión',     title: 'Dashboard' },
+  transactions: { group: 'Payments',   title: 'Transacciones' },
+  withdrawals:  { group: 'Payments',   title: 'Retiros' },
+  commission:   { group: 'Payments',   title: 'Comisión' },
+  clientes:     { group: 'Riders',     title: 'Clientes' },
+  viajes:       { group: 'Riders',     title: 'Viajes' },
+  priders:      { group: 'Riders',     title: 'Pagos' },
+  workers:      { group: 'Drivers',    title: 'Trabajadores' },
+  jobs:         { group: 'Drivers',    title: 'Trabajos' },
+  services:     { group: 'Drivers',    title: 'Tipos de servicio' },
+  pdrivers:     { group: 'Drivers',    title: 'Billeteras' },
+  promotions:   { group: 'Promotions', title: 'Promociones' },
+  historial:    { group: 'Promotions', title: 'Historial de promos' },
+  feedback:     { group: 'Feedback',   title: 'Feedback y disputas' },
 };
 
 export function Header({ isMobile }: { isMobile: boolean }) {

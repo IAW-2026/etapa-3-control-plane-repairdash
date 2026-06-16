@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getBadge, fdate, TONES, STATUS_META } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Spinner } from '@/components/ui/Spinner';
 
 export function ReportModal() {
   const { state, dispatch, closeModal, saveResolve, fetchReportDetail } = useStore();
@@ -20,12 +22,42 @@ export function ReportModal() {
   const listItem = data.reports.find(r => r.id === modal.id);
   const rep = reportDetail && reportDetail.id === modal.id ? reportDetail : listItem;
 
-  if (!rep) {
+  // While the detail is loading, show the skeleton card even if we still have the
+  // list row as a fallback — so resolving always opens with a clear loading state.
+  if (reportLoading || !rep) {
     return (
       <div className="modal-overlay-top">
         <div className="modal-box" style={{ width: 'min(560px, 100%)', gap: 16, margin: 'auto' }}>
           <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>Reporte {modal.id}</span>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--text3)' }}>{reportLoading ? 'Cargando reporte…' : 'No se pudo cargar el reporte.'}</p>
+          {reportLoading ? (
+            <>
+              {/* Descripción */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <Skeleton w="100%" h={13} />
+                <Skeleton w="80%" h={13} />
+              </div>
+              {/* Tarjetas reportante / reportado */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {[0, 1].map(i => (
+                  <div key={i} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: '13px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    <Skeleton w={70} h={10} />
+                    <Skeleton w={120} h={14} />
+                    <Skeleton w={50} h={11} />
+                  </div>
+                ))}
+              </div>
+              {/* Trabajo asociado */}
+              <Skeleton w="100%" h={58} radius={12} />
+              {/* Pruebas adjuntas */}
+              <Skeleton w={120} h={10} />
+              <div style={{ display: 'flex', gap: 9 }}>
+                <Skeleton w={84} h={32} radius={9} />
+                <Skeleton w={84} h={32} radius={9} />
+              </div>
+            </>
+          ) : (
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--text3)' }}>No se pudo cargar el reporte.</p>
+          )}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button className="btn-ghost" onClick={closeModal}>Cerrar</button>
           </div>
@@ -46,7 +78,6 @@ export function ReportModal() {
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
             <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>Reporte {rep.id}</span>
-            <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>GET /api/control-plane/reports/{rep.id}</span>
           </div>
           <Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} />
         </div>
@@ -94,7 +125,6 @@ export function ReportModal() {
         {resolvable && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>Resolver disputa</span>
-            <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>PATCH /api/control-plane/reports/{rep.id}/resolve</span>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {([['AFavor', 'A favor', 'Se desestima el reporte', 'var(--ok)', 'var(--ok-soft)'], ['EnContra', 'En contra', 'Falla contra el reportado', 'var(--danger)', 'var(--danger-soft)']] as const).map(([val, title, sub, fg, bg]) => {
                 const active = modal.decision === val;
@@ -136,14 +166,14 @@ export function ReportModal() {
         )}
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn-ghost" onClick={closeModal}>Cerrar</button>
+          <button className="btn-ghost" onClick={closeModal} disabled={state.saving}>Cerrar</button>
           {resolvable && (
             <button
               className="btn-primary"
               onClick={saveResolve}
-              disabled={!modal.decision}
+              disabled={!modal.decision || state.saving}
             >
-              Confirmar resolución
+              {state.saving ? <Spinner /> : 'Confirmar resolución'}
             </button>
           )}
         </div>

@@ -2,11 +2,15 @@
 import { useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { fdate } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Spinner } from '@/components/ui/Spinner';
 
 export function CommissionView() {
   const { state, dispatch, saveCommission, fetchCommission } = useStore();
   const { data, commissionInput, commissionError } = state;
   const rate = data.commission.rate;
+  // '—' is the initial sentinel from emptyData(): commission not loaded yet.
+  const loading = rate === '—';
 
   // Load the current commission from Payments.
   useEffect(() => { fetchCommission(); }, [fetchCommission]);
@@ -20,22 +24,27 @@ export function CommissionView() {
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--mag)' }} />Payments
           </span>
         </div>
-        <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>PATCH /api/control-plane/commission</span>
       </div>
 
       <div className="card" style={{ gap: 18, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <span style={{ fontSize: 12, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>Vigente</span>
-            <span style={{
-              fontFamily: 'var(--font-grotesk)', fontSize: 46, fontWeight: 700, letterSpacing: '-.02em',
-              background: 'linear-gradient(120deg, var(--violet), var(--pink))',
-              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-            }}>
-              {rate}%
-            </span>
+            {loading ? (
+              <Skeleton w={120} h={46} style={{ margin: '4px 0' }} />
+            ) : (
+              <span style={{
+                fontFamily: 'var(--font-grotesk)', fontSize: 46, fontWeight: 700, letterSpacing: '-.02em',
+                background: 'linear-gradient(120deg, var(--violet), var(--pink))',
+                WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+              }}>
+                {rate}%
+              </span>
+            )}
           </div>
-          <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>Última actualización: {fdate(data.commission.updatedAt)}</span>
+          {loading
+            ? <Skeleton w={170} h={13} />
+            : <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>Última actualización: {fdate(data.commission.updatedAt)}</span>}
         </div>
 
         <div style={{ height: 1, background: 'var(--border)' }} />
@@ -56,7 +65,7 @@ export function CommissionView() {
               onFocus={e => { e.target.style.borderColor = 'var(--violet)'; e.target.style.boxShadow = '0 0 0 3px var(--violet-soft)'; }}
               onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
             />
-            <button className="btn-primary" onClick={saveCommission}>Guardar cambios</button>
+            <button className="btn-primary" onClick={saveCommission} disabled={state.saving}>{state.saving ? <Spinner /> : 'Guardar cambios'}</button>
           </div>
           {commissionError && <span style={{ fontSize: 12.5, color: 'var(--danger)' }}>{commissionError}</span>}
           <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>String decimal entre 0 y 100, hasta 2 decimales. Se envía con actor y motivo para trazabilidad.</span>

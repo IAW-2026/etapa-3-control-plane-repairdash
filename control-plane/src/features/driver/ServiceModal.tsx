@@ -1,5 +1,6 @@
 'use client';
 import { useStore } from '@/lib/store';
+import { Spinner } from '@/components/ui/Spinner';
 
 export function ServiceModal() {
   const { state, dispatch, closeModal, saveService } = useStore();
@@ -16,9 +17,6 @@ export function ServiceModal() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>
             {isEdit ? 'Editar tipo de servicio' : 'Nuevo tipo de servicio'}
-          </span>
-          <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
-            {isEdit ? `PATCH /api/control-plane/service-types/${modal.id}` : 'POST /api/control-plane/service-types'}
           </span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -41,8 +39,8 @@ export function ServiceModal() {
         </div>
         {formError && <span style={{ fontSize: 12.5, color: 'var(--danger)' }}>{formError}</span>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn-ghost" onClick={closeModal}>Cancelar</button>
-          <button className="btn-primary" onClick={saveService}>Guardar</button>
+          <button className="btn-ghost" onClick={closeModal} disabled={state.saving}>Cancelar</button>
+          <button className="btn-primary" onClick={saveService} disabled={state.saving}>{state.saving ? <Spinner /> : 'Guardar'}</button>
         </div>
       </div>
     </div>

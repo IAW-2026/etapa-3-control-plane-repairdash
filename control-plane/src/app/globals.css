@@ -178,3 +178,41 @@
   to   { opacity: 1; transform: none; }
 }
 .toast-in { animation: toastIn .25s ease; }
+
+/* ── Inline spinner (button loading) ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  opacity: .9;
+  animation: spin .6s linear infinite;
+  vertical-align: middle;
+}
+
+/* ── Skeleton / loading placeholders ── */
+/* Two layered cues so the "loading" motion is unmistakable in both themes:
+   1) the piece pulses its opacity, and
+   2) a highlight band sweeps across via a transform-animated pseudo-element. */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .45; }
+}
+@keyframes skeletonShimmer {
+  100% { transform: translateX(100%); }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface2);
+  border-radius: 8px;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(150,130,190,.32) 50%, transparent 100%);
+  animation: skeletonShimmer 1.3s ease-in-out infinite;
+}

@@ -1,49 +1,57 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { UserButton, useUser } from '@clerk/nextjs';
 import { useStore } from '@/lib/store';
 import { ROUTE_PATH } from '@/lib/routes';
 import type { Route } from '@/lib/types';
 
-const NAV_GROUPS = [
+type NavLink = { kind: 'link'; id: Route; label: string; dot: string };
+type NavGroup = {
+  kind: 'group';
+  key: string;
+  label: string;
+  dot: string;
+  items: { id: Route; label: string }[];
+};
+type NavEntry = NavLink | NavGroup;
+
+const NAV: NavEntry[] = [
+  { kind: 'link', id: 'dashboard', label: 'Dashboard', dot: 'var(--violet)' },
   {
-    title: 'Visión',
-    items: [{ id: 'dashboard' as Route, label: 'Dashboard', dot: 'var(--violet)' }],
-  },
-  {
-    title: 'Usuarios',
+    kind: 'group', key: 'payments', label: 'Payments', dot: 'var(--mag)',
     items: [
-      { id: 'clientes' as Route,  label: 'Clientes',             dot: 'var(--pink)' },
-      { id: 'workers' as Route,   label: 'Trabajadores',         dot: 'var(--violet)' },
-      { id: 'pdrivers' as Route,  label: 'Drivers (billeteras)', dot: 'var(--mag)' },
-      { id: 'priders' as Route,   label: 'Riders (pagos)',       dot: 'var(--mag)' },
+      { id: 'transactions', label: 'Transacciones' },
+      { id: 'withdrawals',  label: 'Retiros' },
+      { id: 'commission',   label: 'Comisión' },
     ],
   },
   {
-    title: 'Operaciones',
+    kind: 'group', key: 'riders', label: 'Riders', dot: 'var(--pink)',
     items: [
-      { id: 'jobs' as Route,      label: 'Trabajos',            dot: 'var(--violet)' },
-      { id: 'viajes' as Route,    label: 'Viajes',              dot: 'var(--pink)' },
-      { id: 'services' as Route,  label: 'Tipos de servicio',   dot: 'var(--violet)' },
+      { id: 'clientes', label: 'Clientes' },
+      { id: 'viajes',   label: 'Viajes' },
+      { id: 'priders',  label: 'Pagos' },
     ],
   },
   {
-    title: 'Finanzas',
+    kind: 'group', key: 'drivers', label: 'Drivers', dot: 'var(--violet)',
     items: [
-      { id: 'transactions' as Route, label: 'Transacciones', dot: 'var(--mag)' },
-      { id: 'withdrawals' as Route,  label: 'Retiros',       dot: 'var(--mag)' },
-      { id: 'commission' as Route,   label: 'Comisión',      dot: 'var(--mag)' },
+      { id: 'workers',   label: 'Trabajadores' },
+      { id: 'jobs',      label: 'Trabajos' },
+      { id: 'services',  label: 'Tipos de servicio' },
+      { id: 'pdrivers',  label: 'Billeteras' },
     ],
   },
   {
-    title: 'Plataforma',
+    kind: 'group', key: 'promotions', label: 'Promotions', dot: 'var(--pink)',
     items: [
-      { id: 'promotions' as Route, label: 'Promociones',          dot: 'var(--pink)' },
-      { id: 'historial' as Route,  label: 'Historial de promos',  dot: 'var(--pink)' },
-      { id: 'feedback' as Route,   label: 'Feedback y disputas',  dot: 'var(--pink)' },
+      { id: 'promotions', label: 'Promociones' },
+      { id: 'historial',  label: 'Historial de promos' },
     ],
   },
+  { kind: 'link', id: 'feedback', label: 'Feedback', dot: 'var(--pink)' },
 ];
 
 export function Sidebar({ isMobile }: { isMobile: boolean }) {
@@ -51,6 +59,34 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
   const { sidebarOpen } = state;
   const pathname = usePathname();
   const { user } = useUser();
+
+  // Grupos abiertos: por defecto el que contiene la ruta activa.
+  const [open, setOpen] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    for (const e of NAV) {
+      if (e.kind === 'group' && e.items.some(it => pathname === ROUTE_PATH[it.id])) {
+        initial.add(e.key);
+      }
+    }
+    return initial;
+  });
+  const toggle = (key: string) =>
+    setOpen(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+
+  const linkStyle = (active: boolean, indent = false): React.CSSProperties => ({
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+    margin: '1px 10px', fontSize: 14, textDecoration: 'none',
+    color: active ? 'var(--text)' : 'var(--text2)',
+    fontWeight: active ? 600 : 400,
+    background: active ? 'var(--violet-soft)' : 'transparent',
+    transition: 'background .12s',
+    ...(indent ? { paddingLeft: 30 } : {}),
+  });
 
   const sidebarStyle: React.CSSProperties = {
     width: 256, flexShrink: 0, display: 'flex', flexDirection: 'column',
@@ -79,38 +115,66 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '4px 0 12px' }}>
-        {NAV_GROUPS.map(g => (
-          <div key={g.title} style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text3)', padding: '16px 22px 6px' }}>
-              {g.title}
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 0 12px' }}>
+        {NAV.map(entry => {
+          if (entry.kind === 'link') {
+            const active = pathname === ROUTE_PATH[entry.id];
+            return (
+              <Link
+                key={entry.id}
+                href={ROUTE_PATH[entry.id]}
+                onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
+                style={linkStyle(active)}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--surface2)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? 'var(--violet-soft)' : 'transparent'; }}
+              >
+                <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: entry.dot }} />
+                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.label}</span>
+              </Link>
+            );
+          }
+
+          const isOpen = open.has(entry.key);
+          const hasActiveChild = entry.items.some(it => pathname === ROUTE_PATH[it.id]);
+          return (
+            <div key={entry.key} style={{ display: 'flex', flexDirection: 'column' }}>
+              <button
+                type="button"
+                onClick={() => toggle(entry.key)}
+                style={{
+                  ...linkStyle(hasActiveChild && !isOpen),
+                  width: 'auto', border: 'none', textAlign: 'left', font: 'inherit',
+                  fontSize: 14, fontWeight: hasActiveChild ? 600 : 400,
+                  color: hasActiveChild ? 'var(--text)' : 'var(--text2)',
+                }}
+                onMouseEnter={e => { if (!(hasActiveChild && !isOpen)) (e.currentTarget as HTMLElement).style.background = 'var(--surface2)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = (hasActiveChild && !isOpen) ? 'var(--violet-soft)' : 'transparent'; }}
+              >
+                <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: entry.dot }} />
+                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.label}</span>
+                <span style={{
+                  flexShrink: 0, fontSize: 10, color: 'var(--text3)',
+                  transition: 'transform .15s', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                }}>▶</span>
+              </button>
+              {isOpen && entry.items.map(it => {
+                const active = pathname === ROUTE_PATH[it.id];
+                return (
+                  <Link
+                    key={it.id}
+                    href={ROUTE_PATH[it.id]}
+                    onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
+                    style={linkStyle(active, true)}
+                    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--surface2)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? 'var(--violet-soft)' : 'transparent'; }}
+                  >
+                    <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.label}</span>
+                  </Link>
+                );
+              })}
             </div>
-            {g.items.map(it => {
-              const active = pathname === ROUTE_PATH[it.id];
-              return (
-                <Link
-                  key={it.id}
-                  href={ROUTE_PATH[it.id]}
-                  onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                    margin: '1px 10px', fontSize: 14, textDecoration: 'none',
-                    color: active ? 'var(--text)' : 'var(--text2)',
-                    fontWeight: active ? 600 : 400,
-                    background: active ? 'var(--violet-soft)' : 'transparent',
-                    transition: 'background .12s',
-                  }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--surface2)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? 'var(--violet-soft)' : 'transparent'; }}
-                >
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: it.dot }} />
-                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Footer */}

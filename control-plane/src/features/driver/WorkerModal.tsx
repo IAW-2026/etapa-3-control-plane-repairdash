@@ -1,6 +1,7 @@
 'use client';
 import { useStore } from '@/lib/store';
 import { STATUS_META, TONES } from '@/lib/utils';
+import { Spinner } from '@/components/ui/Spinner';
 
 const WORKER_STATUSES = ['ONLINE', 'OFFLINE', 'EN_TRABAJO'] as const;
 
@@ -14,7 +15,6 @@ export function WorkerModal() {
       <div className="modal-box" style={{ width: 'min(440px, 100%)', gap: 14 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>Cambiar estado · {modal.name}</span>
-          <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>PATCH /api/control-plane/workers/{modal.id}/status</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {WORKER_STATUSES.map(st => {
@@ -41,8 +41,8 @@ export function WorkerModal() {
           })}
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn-ghost" onClick={closeModal}>Cancelar</button>
-          <button className="btn-primary" onClick={saveWorker}>Guardar</button>
+          <button className="btn-ghost" onClick={closeModal} disabled={state.saving}>Cancelar</button>
+          <button className="btn-primary" onClick={saveWorker} disabled={state.saving}>{state.saving ? <Spinner /> : 'Guardar'}</button>
         </div>
       </div>
     </div>

@@ -206,13 +206,12 @@ export type ModalType =
   | { type: 'worker'; id: string; name: string; status: 'ONLINE' | 'OFFLINE' | 'EN_TRABAJO' }
   | { type: 'service'; id: string | null }
   | { type: 'promo'; id: number | null }
-  | { type: 'confirm'; title: string; desc: string; endpoint: string; fn: () => void }
+  | { type: 'confirm'; title: string; desc: string; fn: () => void }
   | { type: 'report'; id: string; decision: 'AFavor' | 'EnContra' | null };
 
 export interface Toast {
-  method: string;
-  path: string;
   msg: string;
+  kind: 'success' | 'error';
 }
 
 export interface FormState {

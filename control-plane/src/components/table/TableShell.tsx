@@ -4,6 +4,7 @@ import { useStore } from '@/lib/store';
 import { STATUS_META } from '@/lib/utils';
 import type { Route } from '@/lib/types';
 import { Pagination } from './Pagination';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 import { TONE_COLORS, type TableMeta } from './meta';
 
 type AnyItem = Record<string, unknown>;
@@ -53,7 +54,6 @@ export function TableShell({ route, meta, onCreate, footer, children }: {
               </span>
             )}
           </div>
-          {meta.endpoint && <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>{meta.endpoint}</span>}
           {meta.sub && <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text2)', maxWidth: '68ch' }}>{meta.sub}</p>}
         </div>
         {meta.create && (
@@ -86,12 +86,9 @@ export function TableShell({ route, meta, onCreate, footer, children }: {
       {/* Table container */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          {children(sliced)}
+          {loading ? <TableSkeleton cols={meta.skeletonCols ?? 5} /> : children(sliced)}
         </div>
 
-        {loading && sliced.length === 0 && (
-          <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>Cargando…</div>
-        )}
         {!loading && sliced.length === 0 && (
           <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>Sin resultados para los filtros aplicados.</div>
         )}

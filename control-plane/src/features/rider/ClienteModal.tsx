@@ -1,5 +1,6 @@
 'use client';
 import { useStore } from '@/lib/store';
+import { Spinner } from '@/components/ui/Spinner';
 
 export function ClienteModal() {
   const { state, dispatch, closeModal, saveCliente } = useStore();
@@ -14,7 +15,6 @@ export function ClienteModal() {
       <div className="modal-box" style={{ width: 'min(440px, 100%)', gap: 14 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>Editar cliente</span>
-          <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>PUT /api/super-admin/clientes/{modal.id}</span>
         </div>
         {(['nombre', 'apellido'] as const).map(field => (
           <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -28,8 +28,8 @@ export function ClienteModal() {
         ))}
         {formError && <span style={{ fontSize: 12.5, color: 'var(--danger)' }}>{formError}</span>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn-ghost" onClick={closeModal}>Cancelar</button>
-          <button className="btn-primary" onClick={saveCliente}>Guardar</button>
+          <button className="btn-ghost" onClick={closeModal} disabled={state.saving}>Cancelar</button>
+          <button className="btn-primary" onClick={saveCliente} disabled={state.saving}>{state.saving ? <Spinner /> : 'Guardar'}</button>
         </div>
       </div>
     </div>

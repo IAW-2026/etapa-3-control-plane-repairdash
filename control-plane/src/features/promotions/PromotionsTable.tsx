@@ -38,7 +38,7 @@ export function PromotionsTable({ rows }: { rows: Promotion[] }) {
               </td>
               <td className="td" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <button className="btn-table" style={{ marginRight: 6, opacity: disabled ? .4 : 1, pointerEvents: disabled ? 'none' : 'auto' }} onClick={() => { dispatch({ type: 'SET_MODAL', payload: { type: 'promo', id: p.id } }); dispatch({ type: 'SET_FORM', payload: { nombre: p.nombre, descripcion: p.descripcion, tipoDescuento: p.tipoDescuento, valor: p.valor, categorias: [...p.categorias], precioMinimo: p.precioMinimo == null ? '' : p.precioMinimo, destacada: p.destacada, usoUnico: p.usoUnico, fechaInicio: p.fechaInicio.slice(0, 10), fechaFin: p.fechaFin ? p.fechaFin.slice(0, 10) : '' } }); }}>Editar</button>
-                <button className="btn-table btn-table-danger" style={{ opacity: disabled ? .4 : 1, pointerEvents: disabled ? 'none' : 'auto' }} onClick={() => dispatch({ type: 'SET_MODAL', payload: { type: 'confirm', title: 'Eliminar promoción', desc: `Soft delete de "${p.nombre}": se marca como eliminada y deja de verse para los usuarios al instante. Queda consultable con ?eliminada=true.`, endpoint: 'DELETE /api/admin/promociones/' + p.id, fn: () => deletePromo(p.id) } })}>Eliminar</button>
+                <button className="btn-table btn-table-danger" style={{ opacity: disabled ? .4 : 1, pointerEvents: disabled ? 'none' : 'auto' }} onClick={() => dispatch({ type: 'SET_MODAL', payload: { type: 'confirm', title: 'Eliminar promoción', desc: `Se marca la promoción "${p.nombre}" como eliminada y deja de verse para los usuarios al instante.`, fn: () => deletePromo(p.id, p.nombre) } })}>Eliminar</button>
               </td>
             </tr>
           );

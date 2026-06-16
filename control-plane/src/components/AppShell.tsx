@@ -3,7 +3,7 @@ import { useEffect, useState, ReactNode } from 'react';
 import { StoreProvider, useStore } from '@/lib/store';
 import { Sidebar } from './layout/Sidebar';
 import { Header } from './layout/Header';
-import { ClienteModal } from '@/features/repairdash/ClienteModal';
+import { ClienteModal } from '@/features/rider/ClienteModal';
 import { WorkerModal } from '@/features/driver/WorkerModal';
 import { ServiceModal } from '@/features/driver/ServiceModal';
 import { PromoModal } from '@/features/promotions/PromoModal';

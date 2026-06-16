@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getBadge, STATUS_META, TONES, fdate } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
+import { Skeleton, TableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/table/Pagination';
 
 const fmt = (v: number | null | undefined) => (v == null ? '—' : v);
@@ -27,10 +28,10 @@ export function FeedbackView() {
 
   const fb = summary?.feedback;
   const summaryCards = [
-    { label: 'Abiertos',      value: fmt(fb?.reportesAbiertos),   color: 'var(--warn)' },
-    { label: 'En revisión',   value: fmt(fb?.reportesEnRevision), color: 'var(--violet)' },
-    { label: 'Resueltos',     value: fmt(fb?.reportesResueltos),  color: 'var(--ok)' },
-    { label: 'Reviews pend.', value: fmt(fb?.reviewsPendientes),  color: 'var(--text)' },
+    { label: 'Abiertos', value: fmt(fb?.reportesAbiertos), color: 'var(--warn)' },
+    { label: 'En revisión', value: fmt(fb?.reportesEnRevision), color: 'var(--violet)' },
+    { label: 'Resueltos', value: fmt(fb?.reportesResueltos), color: 'var(--ok)' },
+    { label: 'Reviews pend.', value: fmt(fb?.reviewsPendientes), color: 'var(--text)' },
   ];
 
   return (
@@ -42,7 +43,6 @@ export function FeedbackView() {
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--pink)' }} />Feedback
           </span>
         </div>
-        <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>GET /api/control-plane/reports</span>
         <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text2)', maxWidth: '68ch' }}>
           Reportes y disputas entre riders y drivers. Feedback es la fuente de verdad: resolver una disputa acá <strong>no modifica Payments</strong> (no frena, destraba ni reembolsa pagos).
         </p>
@@ -52,7 +52,11 @@ export function FeedbackView() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         {summaryCards.map(c => (
           <div key={c.label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 27, fontWeight: 700, color: c.color }}>{c.value}</span>
+            {summary ? (
+              <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 27, fontWeight: 700, color: c.color }}>{c.value}</span>
+            ) : (
+              <Skeleton w={48} h={27} style={{ margin: '4px 0 3px' }} />
+            )}
             <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>{c.label}</span>
           </div>
         ))}
@@ -86,52 +90,51 @@ export function FeedbackView() {
       {/* Table */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
-            <thead>
-              <tr>
-                {['Reporte', 'Reportante → Reportado', 'Estado', 'Decisión', 'Creado', ''].map((h, i) => (
-                  <th key={i} className={`th${i === 5 ? ' th-right' : ''}`}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(r => {
-                const b = getBadge(r.estado);
-                const resolvable = r.estado === 'PRUEBAS_AGREGADAS';
-                const decMeta = r.decision ? STATUS_META[r.decision] : null;
-                const decColor = decMeta ? TONES[decMeta.tone][1] : 'var(--text3)';
-                return (
-                  <tr key={r.id} className="tr-base">
-                    <td className="td" style={{ maxWidth: 320 }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text3)' }}>{r.id} · {r.trabajo.tipoDeTrabajo}</div>
-                      <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</div>
-                    </td>
-                    <td className="td" style={{ fontSize: 13 }}>
-                      <span style={{ fontWeight: 600 }}>{r.reportante.nombre} {r.reportante.apellido}</span>
-                      <span style={{ color: 'var(--text3)' }}> → </span>
-                      <span>{r.reportado.nombre} {r.reportado.apellido}</span>
-                    </td>
-                    <td className="td"><Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} /></td>
-                    <td className="td"><span style={{ fontSize: 12.5, fontWeight: 600, color: decColor }}>{r.decision ? STATUS_META[r.decision].label : '—'}</span></td>
-                    <td className="td" style={{ fontSize: 13, color: 'var(--text2)' }}>{fdate(r.creadoEn)}</td>
-                    <td className="td" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button
-                        className="btn-table"
-                        style={resolvable ? { borderColor: 'var(--violet)', color: 'var(--violet)' } : {}}
-                        onClick={() => dispatch({ type: 'SET_MODAL', payload: { type: 'report', id: r.id, decision: null } })}
-                      >
-                        {resolvable ? 'Resolver' : 'Ver'}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {loading ? <TableSkeleton cols={6} /> : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
+              <thead>
+                <tr>
+                  {['Reporte', 'Reportante → Reportado', 'Estado', 'Decisión', 'Creado', ''].map((h, i) => (
+                    <th key={i} className={`th${i === 5 ? ' th-right' : ''}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(r => {
+                  const b = getBadge(r.estado);
+                  const resolvable = r.estado === 'PRUEBAS_AGREGADAS';
+                  const decMeta = r.decision ? STATUS_META[r.decision] : null;
+                  const decColor = decMeta ? TONES[decMeta.tone][1] : 'var(--text3)';
+                  return (
+                    <tr key={r.id} className="tr-base">
+                      <td className="td" style={{ maxWidth: 320 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text3)' }}>{r.id} · {r.trabajo.tipoDeTrabajo}</div>
+                        <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</div>
+                      </td>
+                      <td className="td" style={{ fontSize: 13 }}>
+                        <span style={{ fontWeight: 600 }}>{r.reportante.nombre} {r.reportante.apellido}</span>
+                        <span style={{ color: 'var(--text3)' }}> → </span>
+                        <span>{r.reportado.nombre} {r.reportado.apellido}</span>
+                      </td>
+                      <td className="td"><Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} /></td>
+                      <td className="td"><span style={{ fontSize: 12.5, fontWeight: 600, color: decColor }}>{r.decision ? STATUS_META[r.decision].label : '—'}</span></td>
+                      <td className="td" style={{ fontSize: 13, color: 'var(--text2)' }}>{fdate(r.creadoEn)}</td>
+                      <td className="td" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          className="btn-table"
+                          style={resolvable ? { borderColor: 'var(--violet)', color: 'var(--violet)' } : {}}
+                          onClick={() => dispatch({ type: 'SET_MODAL', payload: { type: 'report', id: r.id, decision: null } })}
+                        >
+                          {resolvable ? 'Resolver' : 'Ver'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
-        {loading && filtered.length === 0 && (
-          <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>Cargando…</div>
-        )}
         {!loading && filtered.length === 0 && (
           <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>Sin reportes para los filtros aplicados.</div>
         )}

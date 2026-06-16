@@ -27,6 +27,7 @@ interface State {
   summaryLoading: boolean;
   reportDetail: Report | null;
   reportLoading: boolean;
+  saving: boolean;
 }
 
 type Action =
@@ -57,7 +58,8 @@ type Action =
   | { type: 'SET_SUMMARY'; payload: SummaryData | null }
   | { type: 'SET_SUMMARY_LOADING'; payload: boolean }
   | { type: 'SET_REPORT_DETAIL'; payload: Report | null }
-  | { type: 'SET_REPORT_LOADING'; payload: boolean };
+  | { type: 'SET_REPORT_LOADING'; payload: boolean }
+  | { type: 'SET_SAVING'; payload: boolean };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -93,6 +95,7 @@ function reducer(state: State, action: Action): State {
     case 'SET_SUMMARY_LOADING': return { ...state, summaryLoading: action.payload };
     case 'SET_REPORT_DETAIL': return { ...state, reportDetail: action.payload };
     case 'SET_REPORT_LOADING': return { ...state, reportLoading: action.payload };
+    case 'SET_SAVING': return { ...state, saving: action.payload };
     default: return state;
   }
 }
@@ -111,10 +114,18 @@ function getInitialState(): State {
     loading: false, serverTotal: 0, totalPages: 1,
     summary: null, summaryLoading: false,
     reportDetail: null, reportLoading: false,
+    saving: false,
   };
 }
 
 export type FetchParams = { q: string; status: string; resFilter: string; dateFrom: string; dateTo: string; page: number };
+
+// Human-readable labels for worker statuses, used in success toasts.
+const WORKER_STATUS_LABEL: Record<'ONLINE' | 'OFFLINE' | 'EN_TRABAJO', string> = {
+  ONLINE: 'En línea',
+  OFFLINE: 'Desconectado',
+  EN_TRABAJO: 'En trabajo',
+};
 
 function routeEndpoint(route: Route): string | null {
   const map: Partial<Record<Route, string>> = {
@@ -156,7 +167,7 @@ interface StoreCtx {
   state: State;
   dispatch: React.Dispatch<Action>;
   setTheme: (t: Theme) => void;
-  showToast: (method: string, path: string, msg: string) => void;
+  showToast: (msg: string, kind?: 'success' | 'error') => void;
   closeModal: () => void;
   fetchRouteData: (route: Route, params: FetchParams) => Promise<void>;
   fetchSummary: () => Promise<void>;
@@ -168,9 +179,9 @@ interface StoreCtx {
   saveCommission: () => Promise<void>;
   savePromo: () => Promise<void>;
   saveResolve: () => Promise<void>;
-  deleteCliente: (id: string) => Promise<void>;
-  deleteService: (id: string) => Promise<void>;
-  deletePromo: (id: number) => Promise<void>;
+  deleteCliente: (id: string, name: string) => Promise<void>;
+  deleteService: (id: string, name: string) => Promise<void>;
+  deletePromo: (id: number, name: string) => Promise<void>;
 }
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -184,9 +195,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem('cp-theme', t); } catch { /* */ }
   }, []);
 
-  const showToast = useCallback((method: string, path: string, msg: string) => {
+  const showToast = useCallback((msg: string, kind: 'success' | 'error' = 'success') => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    dispatch({ type: 'SET_TOAST', payload: { method, path, msg } });
+    dispatch({ type: 'SET_TOAST', payload: { msg, kind } });
     toastTimer.current = setTimeout(() => dispatch({ type: 'SET_TOAST', payload: null }), 4000);
   }, []);
 
@@ -294,6 +305,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Ingresá al menos un nombre o un apellido.' });
       return;
     }
+    dispatch({ type: 'SET_SAVING', payload: true });
     try {
       const res = await fetch(`/api/cp/clientes/${encodeURIComponent(modal.id)}`, {
         method: 'PUT',
@@ -302,7 +314,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || `Error ${res.status}` });
+        dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || 'No se pudo guardar el cambio.' });
         return;
       }
       const json = await res.json();
@@ -311,39 +323,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         clientes: data.clientes.map(c => c.id_clerk === modal.id ? (updated || { ...c, nombre: nombre || c.nombre, apellido: apellido || c.apellido }) : c)
       }});
       dispatch({ type: 'SET_MODAL', payload: null });
-      showToast('PUT', '/api/super-admin/clientes/' + modal.id, 'Cliente actualizado');
+      showToast(`Se editó el cliente ${[nombre, apellido].filter(Boolean).join(' ')}`);
       revalidate('clientes');
     } catch {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red — no se aplicó el cambio.' });
+    } finally {
+      dispatch({ type: 'SET_SAVING', payload: false });
     }
   }, [state, showToast, revalidate]);
 
   const saveWorker = useCallback(async () => {
     const { modal, data } = state;
     if (modal?.type !== 'worker') return;
-    const path = '/api/control-plane/workers/' + modal.id + '/status';
-    let res: Response;
+    const name = modal.name;
+    dispatch({ type: 'SET_SAVING', payload: true });
     try {
-      res = await fetch(`/api/cp/workers/${encodeURIComponent(modal.id)}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: modal.status }),
-      });
-    } catch {
-      showToast('PATCH', path, 'Error de red — el estado no se cambió');
-      return;
+      let res: Response;
+      try {
+        res = await fetch(`/api/cp/workers/${encodeURIComponent(modal.id)}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: modal.status }),
+        });
+      } catch {
+        showToast(`No se pudo cambiar el estado de ${name}. Probá de nuevo.`, 'error');
+        return;
+      }
+      if (!res.ok) {
+        showToast(`No se pudo cambiar el estado de ${name}. Probá de nuevo.`, 'error');
+        return;
+      }
+      dispatch({ type: 'UPDATE_DATA', payload: {
+        workers: data.workers.map(w => w.id === modal.id ? { ...w, status: modal.status } : w)
+      }});
+      dispatch({ type: 'SET_MODAL', payload: null });
+      showToast(`Se actualizó el estado de ${name} a ${WORKER_STATUS_LABEL[modal.status]}`);
+      revalidate('workers');
+    } finally {
+      dispatch({ type: 'SET_SAVING', payload: false });
     }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      showToast('PATCH', path, `Error ${res.status}: ${err.message || err.error || 'no se pudo cambiar el estado'}`);
-      return;
-    }
-    dispatch({ type: 'UPDATE_DATA', payload: {
-      workers: data.workers.map(w => w.id === modal.id ? { ...w, status: modal.status } : w)
-    }});
-    dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('PATCH', path, 'Estado actualizado a ' + modal.status);
-    revalidate('workers');
   }, [state, showToast, revalidate]);
 
   const saveService = useCallback(async () => {
@@ -355,6 +373,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!(precio > 0)) { dispatch({ type: 'SET_FORM_ERROR', payload: 'El precio base debe ser mayor a 0.' }); return; }
     const body = { nombre, descripcion: String(form.descripcion || '').trim(), precioBase: precio };
 
+    dispatch({ type: 'SET_SAVING', payload: true });
     try {
       if (modal.id) {
         const res = await fetch(`/api/cp/services/${encodeURIComponent(modal.id)}`, {
@@ -364,15 +383,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          if (res.status === 409) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Conflicto: el nombre ya existe (409).' }); return; }
-          dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || `Error ${res.status}` });
+          if (res.status === 409) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Conflicto: el nombre ya existe.' }); return; }
+          dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || 'No se pudo guardar el cambio.' });
           return;
         }
         const json = await res.json();
         const updated: ServiceType = json.data || { ...data.serviceTypes.find(t => t.id === modal.id)!, ...body };
         dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: data.serviceTypes.map(t => t.id === modal.id ? updated : t) }});
         dispatch({ type: 'SET_MODAL', payload: null });
-        showToast('PATCH', '/api/control-plane/service-types/' + modal.id, 'Tipo de servicio actualizado');
+        showToast(`Se editó el tipo de servicio ${nombre}`);
         revalidate('services');
       } else {
         const res = await fetch('/api/cp/services', {
@@ -382,19 +401,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          if (res.status === 409) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Ya existe un tipo de servicio con ese nombre (409).' }); return; }
-          dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || `Error ${res.status}` });
+          if (res.status === 409) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Ya existe un tipo de servicio con ese nombre.' }); return; }
+          dispatch({ type: 'SET_FORM_ERROR', payload: err.message || err.error || 'No se pudo crear el tipo de servicio.' });
           return;
         }
         const json = await res.json();
         const nuevo: ServiceType = json.data || { id: 'tmp_' + Date.now(), ...body, drivers: 0, activos: 0 };
         dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: [nuevo, ...data.serviceTypes] }});
         dispatch({ type: 'SET_MODAL', payload: null });
-        showToast('POST', '/api/control-plane/service-types', 'Tipo de servicio creado');
+        showToast(`Se creó el tipo de servicio ${nombre}`);
         revalidate('services');
       }
     } catch {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red. Verificá la conexión.' });
+    } finally {
+      dispatch({ type: 'SET_SAVING', payload: false });
     }
   }, [state, showToast, revalidate]);
 
@@ -405,28 +426,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
     const rate = parseFloat(v).toFixed(2);
-    let res: Response;
+    dispatch({ type: 'SET_SAVING', payload: true });
     try {
-      res = await fetch('/api/cp/commission', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commissionRate: rate }),
-      });
-    } catch {
-      dispatch({ type: 'SET_COMMISSION_ERROR', payload: 'Error de red — la comisión no se actualizó.' });
-      return;
+      let res: Response;
+      try {
+        res = await fetch('/api/cp/commission', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commissionRate: rate }),
+        });
+      } catch {
+        dispatch({ type: 'SET_COMMISSION_ERROR', payload: 'Error de red — la comisión no se actualizó.' });
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        dispatch({ type: 'SET_COMMISSION_ERROR', payload: err.message || err.error || 'No se pudo actualizar la comisión.' });
+        return;
+      }
+      const json = await res.json();
+      const commission: Commission = json.data || { rate, updatedAt: new Date().toISOString() };
+      dispatch({ type: 'UPDATE_DATA', payload: { commission } });
+      dispatch({ type: 'SET_COMMISSION_INPUT', payload: '' });
+      showToast(`Se actualizó la comisión a ${rate}%`);
+      fetchCommission();
+    } finally {
+      dispatch({ type: 'SET_SAVING', payload: false });
     }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      dispatch({ type: 'SET_COMMISSION_ERROR', payload: err.message || err.error || `Error ${res.status}` });
-      return;
-    }
-    const json = await res.json();
-    const commission: Commission = json.data || { rate, updatedAt: new Date().toISOString() };
-    dispatch({ type: 'UPDATE_DATA', payload: { commission } });
-    dispatch({ type: 'SET_COMMISSION_INPUT', payload: '' });
-    showToast('PATCH', '/api/control-plane/commission', 'Comisión actualizada a ' + rate + '%');
-    fetchCommission();
   }, [state, showToast, fetchCommission]);
 
   const savePromo = useCallback(async () => {
@@ -454,6 +480,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       fechaFin:      toIso(form.fechaFin, true),
     };
 
+    dispatch({ type: 'SET_SAVING', payload: true });
     try {
       if (modal.id !== null) {
         const res = await fetch(`/api/cp/promotions/${encodeURIComponent(String(modal.id))}`, {
@@ -463,14 +490,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          dispatch({ type: 'SET_FORM_ERROR', payload: err.error || `Error ${res.status}` });
+          dispatch({ type: 'SET_FORM_ERROR', payload: err.error || 'No se pudo guardar el cambio.' });
           return;
         }
         const json = await res.json();
         const updated = json.data || { ...data.promotions.find(p => p.id === modal.id)!, ...payload };
         dispatch({ type: 'UPDATE_DATA', payload: { promotions: data.promotions.map(p => p.id === modal.id ? updated : p) }});
         dispatch({ type: 'SET_MODAL', payload: null });
-        showToast('PATCH', '/api/admin/promociones/' + modal.id, 'Promoción actualizada');
+        showToast(`Se editó la promoción ${nombre}`);
         revalidate('promotions');
       } else {
         const res = await fetch('/api/cp/promotions', {
@@ -480,7 +507,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          dispatch({ type: 'SET_FORM_ERROR', payload: err.error || `Error ${res.status}` });
+          dispatch({ type: 'SET_FORM_ERROR', payload: err.error || 'No se pudo crear la promoción.' });
           return;
         }
         const json = await res.json();
@@ -488,105 +515,106 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const nueva = json.data || { id: nextId, eliminada: false, filtroUsuarios: null, ...payload };
         dispatch({ type: 'UPDATE_DATA', payload: { promotions: [nueva, ...data.promotions] }});
         dispatch({ type: 'SET_MODAL', payload: null });
-        showToast('POST', '/api/admin/promociones', 'Promoción creada (#' + (json.data?.id ?? nextId) + ')');
+        showToast(`Se creó la promoción ${nombre}`);
         revalidate('promotions');
       }
     } catch {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red. Verificá la conexión.' });
+    } finally {
+      dispatch({ type: 'SET_SAVING', payload: false });
     }
   }, [state, showToast, revalidate]);
 
   const saveResolve = useCallback(async () => {
     const { modal, data } = state;
     if (modal?.type !== 'report' || !modal.decision) return;
-    const path = '/api/control-plane/reports/' + modal.id + '/resolve';
-    let res: Response;
+    const decision = modal.decision;
+    dispatch({ type: 'SET_SAVING', payload: true });
     try {
-      res = await fetch(`/api/cp/reports/${encodeURIComponent(modal.id)}/resolve`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision: modal.decision }),
-      });
-    } catch {
-      showToast('PATCH', path, 'Error de red — la disputa no se resolvió');
-      return;
-    }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      showToast('PATCH', path, `Error ${res.status}: ${err.message || err.error || 'no se pudo resolver'}`);
-      return;
-    }
-    dispatch({ type: 'UPDATE_DATA', payload: {
-      reports: data.reports.map(r => r.id === modal.id
-        ? { ...r, estado: 'RESUELTO' as const, resolucion: 'Resuelto' as const, decision: modal.decision }
-        : r)
-    }});
-    if (state.reportDetail && state.reportDetail.id === modal.id) {
-      dispatch({ type: 'SET_REPORT_DETAIL', payload: {
-        ...state.reportDetail, estado: 'RESUELTO', resolucion: 'Resuelto', decision: modal.decision,
+      let res: Response;
+      try {
+        res = await fetch(`/api/cp/reports/${encodeURIComponent(modal.id)}/resolve`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decision }),
+        });
+      } catch {
+        showToast('No se pudo resolver la disputa. Probá de nuevo.', 'error');
+        return;
+      }
+      if (!res.ok) {
+        showToast('No se pudo resolver la disputa. Probá de nuevo.', 'error');
+        return;
+      }
+      dispatch({ type: 'UPDATE_DATA', payload: {
+        reports: data.reports.map(r => r.id === modal.id
+          ? { ...r, estado: 'RESUELTO' as const, resolucion: 'Resuelto' as const, decision }
+          : r)
       }});
+      if (state.reportDetail && state.reportDetail.id === modal.id) {
+        dispatch({ type: 'SET_REPORT_DETAIL', payload: {
+          ...state.reportDetail, estado: 'RESUELTO', resolucion: 'Resuelto', decision,
+        }});
+      }
+      dispatch({ type: 'SET_MODAL', payload: null });
+      showToast(`Se resolvió la disputa a ${decision === 'AFavor' ? 'favor' : 'contra'} del reportado`);
+      revalidate('feedback', true);
+    } finally {
+      dispatch({ type: 'SET_SAVING', payload: false });
     }
-    dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('PATCH', path, 'Disputa resuelta — fallo ' + (modal.decision === 'AFavor' ? 'a favor' : 'en contra'));
-    revalidate('feedback', true);
   }, [state, showToast, revalidate]);
 
-  const deleteCliente = useCallback(async (id: string) => {
-    const path = '/api/super-admin/clientes/' + id;
+  const deleteCliente = useCallback(async (id: string, name: string) => {
     let res: Response;
     try {
       res = await fetch(`/api/cp/clientes/${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch {
-      showToast('DELETE', path, 'Error de red — el cliente no se eliminó');
+      showToast(`No se pudo eliminar el cliente ${name}. Probá de nuevo.`, 'error');
       return;
     }
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      showToast('DELETE', path, `Error ${res.status}: ${err.message || err.error || 'no se pudo eliminar'}`);
+      showToast(`No se pudo eliminar el cliente ${name}. Probá de nuevo.`, 'error');
       return;
     }
     dispatch({ type: 'UPDATE_DATA', payload: { clientes: state.data.clientes.filter(c => c.id_clerk !== id) }});
     dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('DELETE', path, 'Cliente eliminado');
+    showToast(`Se eliminó el cliente ${name}`);
     revalidate('clientes');
   }, [state.data.clientes, showToast, revalidate]);
 
-  const deleteService = useCallback(async (id: string) => {
+  const deleteService = useCallback(async (id: string, name: string) => {
     try {
       const res = await fetch(`/api/cp/services/${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
         dispatch({ type: 'SET_MODAL', payload: null });
-        showToast('DELETE', '/api/control-plane/service-types/' + id, `Error ${res.status}: ${err.message || err.error || 'no se pudo eliminar'}`);
+        showToast(`No se pudo eliminar el tipo de servicio ${name}. Probá de nuevo.`, 'error');
         return;
       }
     } catch {
-      showToast('DELETE', '/api/control-plane/service-types/' + id, 'Error de red — el tipo de servicio no se eliminó');
+      showToast(`No se pudo eliminar el tipo de servicio ${name}. Probá de nuevo.`, 'error');
       return;
     }
     dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: state.data.serviceTypes.filter(t => t.id !== id) }});
     dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('DELETE', '/api/control-plane/service-types/' + id, 'Tipo de servicio eliminado');
+    showToast(`Se eliminó el tipo de servicio ${name}`);
     revalidate('services');
   }, [state.data.serviceTypes, showToast, revalidate]);
 
-  const deletePromo = useCallback(async (id: number) => {
-    const path = '/api/admin/promociones/' + id;
+  const deletePromo = useCallback(async (id: number, name: string) => {
     let res: Response;
     try {
       res = await fetch(`/api/cp/promotions/${encodeURIComponent(String(id))}`, { method: 'DELETE' });
     } catch {
-      showToast('DELETE', path, 'Error de red — la promoción no se eliminó');
+      showToast(`No se pudo eliminar la promoción ${name}. Probá de nuevo.`, 'error');
       return;
     }
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      showToast('DELETE', path, `Error ${res.status}: ${err.message || err.error || 'no se pudo eliminar'}`);
+      showToast(`No se pudo eliminar la promoción ${name}. Probá de nuevo.`, 'error');
       return;
     }
     dispatch({ type: 'UPDATE_DATA', payload: { promotions: state.data.promotions.map(p => p.id === id ? { ...p, eliminada: true } : p) }});
     dispatch({ type: 'SET_MODAL', payload: null });
-    showToast('DELETE', path, 'Promoción eliminada (soft delete)');
+    showToast(`Se eliminó la promoción ${name}`);
     revalidate('promotions');
   }, [state.data.promotions, showToast, revalidate]);
 

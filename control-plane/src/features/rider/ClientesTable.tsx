@@ -22,7 +22,7 @@ export function ClientesTable({ rows }: { rows: Cliente[] }) {
               <td className="td" style={{ fontSize: 13.5 }}>{viajesCount}</td>
               <td className="td" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <button className="btn-table" style={{ marginRight: 6 }} onClick={() => { dispatch({ type: 'SET_MODAL', payload: { type: 'cliente', id: c.id_clerk, name: c.nombre + ' ' + c.apellido } }); dispatch({ type: 'SET_FORM', payload: { nombre: c.nombre, apellido: c.apellido } }); }}>Editar</button>
-                <button className="btn-table btn-table-danger" onClick={() => dispatch({ type: 'SET_MODAL', payload: { type: 'confirm', title: 'Eliminar cliente', desc: `Se elimina el registro de ${c.nombre} ${c.apellido} en la base de RepairDash. No elimina al usuario en Clerk.`, endpoint: 'DELETE /api/super-admin/clientes/' + c.id_clerk, fn: () => deleteCliente(c.id_clerk) } })}>Eliminar</button>
+                <button className="btn-table btn-table-danger" onClick={() => dispatch({ type: 'SET_MODAL', payload: { type: 'confirm', title: 'Eliminar cliente', desc: `Se elimina el registro de ${c.nombre} ${c.apellido} en RepairDash. Esta acción no se puede deshacer.`, fn: () => deleteCliente(c.id_clerk, `${c.nombre} ${c.apellido}`.trim()) } })}>Eliminar</button>
               </td>
             </tr>
           );

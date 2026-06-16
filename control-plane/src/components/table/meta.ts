@@ -15,6 +15,8 @@ export interface TableMeta {
   dates?: boolean;
   create?: boolean;
   createLabel?: string;
+  // Column count for the loading skeleton; defaults to 5 in TableShell.
+  skeletonCols?: number;
   dataKey: keyof AppData;
 }
 
