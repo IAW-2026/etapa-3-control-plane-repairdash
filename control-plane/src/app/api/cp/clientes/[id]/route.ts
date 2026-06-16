@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { ENV, rdHeaders, configured } from '@/lib/server/config';
+import { CACHE_TAGS } from '@/lib/server/cache';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,6 +17,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
     const json = await res.json();
     if (!res.ok) return NextResponse.json(json, { status: res.status });
+    revalidateTag(CACHE_TAGS.repairdash, 'max');
+    revalidateTag(CACHE_TAGS.summary, 'max');
     return NextResponse.json({ data: json.data });
   } catch {
     return NextResponse.json({ error: 'Error de conexión con RepairDash' }, { status: 503 });
@@ -33,6 +37,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     });
     const json = await res.json();
     if (!res.ok) return NextResponse.json(json, { status: res.status });
+    revalidateTag(CACHE_TAGS.repairdash, 'max');
+    revalidateTag(CACHE_TAGS.summary, 'max');
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Error de conexión con RepairDash' }, { status: 503 });

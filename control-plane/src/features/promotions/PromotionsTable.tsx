@@ -3,9 +3,14 @@ import { useStore } from '@/lib/store';
 import { money, fdate, getBadge, promoEstado, promoValor } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import type { Promotion } from '@/lib/types';
+import { useServiceTypes } from './useServiceTypes';
 
 export function PromotionsTable({ rows }: { rows: Promotion[] }) {
   const { dispatch, deletePromo } = useStore();
+  const { services } = useServiceTypes();
+  const serviceNameById = new Map(services.map(s => [s.id, s.nombre]));
+  const formatCategorias = (categorias: string[]) =>
+    categorias.length ? categorias.map(c => serviceNameById.get(c) || c).join(', ') : 'Todas';
 
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
@@ -28,9 +33,9 @@ export function PromotionsTable({ rows }: { rows: Promotion[] }) {
               </td>
               <td className="td">
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--pink)' }}>{promoValor(p)}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>{p.tipoDescuento === 'porcentaje' ? 'Porcentaje' : 'Monto fijo'}{p.precioMinimo ? ' · mín ' + money(p.precioMinimo) : ''}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>{p.tipoDescuento === '%' ? 'Porcentaje' : 'Monto fijo'}{p.precioMinimo ? ' · mín ' + money(p.precioMinimo) : ''}</div>
               </td>
-              <td className="td" style={{ fontSize: 12.5, color: 'var(--text2)' }}>{p.categorias.length ? p.categorias.join(', ') : 'Todas'}</td>
+              <td className="td" style={{ fontSize: 12.5, color: 'var(--text2)' }}>{formatCategorias(p.categorias)}</td>
               <td className="td" style={{ fontSize: 12.5, color: 'var(--text2)' }}>{fdate(p.fechaInicio)} → {p.fechaFin ? fdate(p.fechaFin) : 'sin venc.'}</td>
               <td className="td">
                 <Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} />

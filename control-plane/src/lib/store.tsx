@@ -1,17 +1,12 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useReducer, useRef, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { emptyData } from './data';
 import type { AppData, Commission, FormState, ModalType, Report, Route, ServiceType, SummaryData, Theme, Toast } from './types';
 
 interface State {
   theme: Theme;
   route: Route;
-  q: string;
-  status: string;
-  resFilter: string;
-  dateFrom: string;
-  dateTo: string;
-  page: number;
   sidebarOpen: boolean;
   modal: ModalType | null;
   form: FormState;
@@ -20,9 +15,6 @@ interface State {
   commissionError: string;
   toast: Toast | null;
   data: AppData;
-  loading: boolean;
-  serverTotal: number;
-  totalPages: number;
   summary: SummaryData | null;
   summaryLoading: boolean;
   reportDetail: Report | null;
@@ -33,12 +25,6 @@ interface State {
 type Action =
   | { type: 'SET_THEME'; payload: Theme }
   | { type: 'SET_ROUTE'; payload: Route }
-  | { type: 'SET_Q'; payload: string }
-  | { type: 'SET_STATUS'; payload: string }
-  | { type: 'SET_RES_FILTER'; payload: string }
-  | { type: 'SET_DATE_FROM'; payload: string }
-  | { type: 'SET_DATE_TO'; payload: string }
-  | { type: 'SET_PAGE'; payload: number }
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'CLOSE_SIDEBAR' }
   | { type: 'SET_MODAL'; payload: ModalType | null }
@@ -52,9 +38,6 @@ type Action =
   | { type: 'SET_TOAST'; payload: Toast | null }
   | { type: 'SET_DATA'; payload: AppData }
   | { type: 'UPDATE_DATA'; payload: Partial<AppData> }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_SERVER_TOTAL'; payload: number }
-  | { type: 'SET_TOTAL_PAGES'; payload: number }
   | { type: 'SET_SUMMARY'; payload: SummaryData | null }
   | { type: 'SET_SUMMARY_LOADING'; payload: boolean }
   | { type: 'SET_REPORT_DETAIL'; payload: Report | null }
@@ -64,13 +47,7 @@ type Action =
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_THEME': return { ...state, theme: action.payload };
-    case 'SET_ROUTE': return { ...state, route: action.payload, q: '', status: 'ALL', resFilter: 'ALL', page: 1, dateFrom: '', dateTo: '', sidebarOpen: false, loading: false };
-    case 'SET_Q': return { ...state, q: action.payload, page: 1 };
-    case 'SET_STATUS': return { ...state, status: action.payload, page: 1 };
-    case 'SET_RES_FILTER': return { ...state, resFilter: action.payload };
-    case 'SET_DATE_FROM': return { ...state, dateFrom: action.payload, page: 1 };
-    case 'SET_DATE_TO': return { ...state, dateTo: action.payload, page: 1 };
-    case 'SET_PAGE': return { ...state, page: action.payload };
+    case 'SET_ROUTE': return { ...state, route: action.payload, sidebarOpen: false };
     case 'TOGGLE_SIDEBAR': return { ...state, sidebarOpen: !state.sidebarOpen };
     case 'CLOSE_SIDEBAR': return { ...state, sidebarOpen: false };
     case 'SET_MODAL': return { ...state, modal: action.payload, formError: '' };
@@ -88,9 +65,6 @@ function reducer(state: State, action: Action): State {
     case 'SET_TOAST': return { ...state, toast: action.payload };
     case 'SET_DATA': return { ...state, data: action.payload };
     case 'UPDATE_DATA': return { ...state, data: { ...state.data, ...action.payload } };
-    case 'SET_LOADING': return { ...state, loading: action.payload };
-    case 'SET_SERVER_TOTAL': return { ...state, serverTotal: action.payload };
-    case 'SET_TOTAL_PAGES': return { ...state, totalPages: action.payload };
     case 'SET_SUMMARY': return { ...state, summary: action.payload };
     case 'SET_SUMMARY_LOADING': return { ...state, summaryLoading: action.payload };
     case 'SET_REPORT_DETAIL': return { ...state, reportDetail: action.payload };
@@ -106,19 +80,15 @@ function getInitialState(): State {
   const theme: Theme = 'dark';
   const route: Route = 'dashboard';
   return {
-    theme, route, q: '', status: 'ALL', resFilter: 'ALL',
-    dateFrom: '', dateTo: '', page: 1,
+    theme, route,
     sidebarOpen: false, modal: null, form: {}, formError: '',
     commissionInput: '', commissionError: '', toast: null,
     data: emptyData(),
-    loading: false, serverTotal: 0, totalPages: 1,
     summary: null, summaryLoading: false,
     reportDetail: null, reportLoading: false,
     saving: false,
   };
 }
-
-export type FetchParams = { q: string; status: string; resFilter: string; dateFrom: string; dateTo: string; page: number };
 
 // Human-readable labels for worker statuses, used in success toasts.
 const WORKER_STATUS_LABEL: Record<'ONLINE' | 'OFFLINE' | 'EN_TRABAJO', string> = {
@@ -127,49 +97,12 @@ const WORKER_STATUS_LABEL: Record<'ONLINE' | 'OFFLINE' | 'EN_TRABAJO', string> =
   EN_TRABAJO: 'En trabajo',
 };
 
-function routeEndpoint(route: Route): string | null {
-  const map: Partial<Record<Route, string>> = {
-    clientes:     '/api/cp/clientes',
-    viajes:       '/api/cp/viajes',
-    workers:      '/api/cp/workers',
-    jobs:         '/api/cp/jobs',
-    services:     '/api/cp/services',
-    pdrivers:     '/api/cp/pdrivers',
-    priders:      '/api/cp/priders',
-    transactions: '/api/cp/transactions',
-    withdrawals:  '/api/cp/withdrawals',
-    promotions:   '/api/cp/promotions',
-    historial:    '/api/cp/historial',
-    feedback:     '/api/cp/reports',
-  };
-  return map[route] || null;
-}
-
-function routeDataKey(route: Route): keyof AppData | null {
-  const map: Partial<Record<Route, keyof AppData>> = {
-    clientes:     'clientes',
-    viajes:       'viajes',
-    workers:      'workers',
-    jobs:         'jobs',
-    services:     'serviceTypes',
-    pdrivers:     'pdrivers',
-    priders:      'priders',
-    transactions: 'transactions',
-    withdrawals:  'withdrawals',
-    promotions:   'promotions',
-    historial:    'promoHistory',
-    feedback:     'reports',
-  };
-  return map[route] || null;
-}
-
 interface StoreCtx {
   state: State;
   dispatch: React.Dispatch<Action>;
   setTheme: (t: Theme) => void;
   showToast: (msg: string, kind?: 'success' | 'error') => void;
   closeModal: () => void;
-  fetchRouteData: (route: Route, params: FetchParams) => Promise<void>;
   fetchSummary: () => Promise<void>;
   fetchCommission: () => Promise<void>;
   fetchReportDetail: (id: string) => Promise<void>;
@@ -187,6 +120,7 @@ interface StoreCtx {
 const Ctx = createContext<StoreCtx | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [state, dispatch] = useReducer(reducer, undefined, getInitialState);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -204,35 +138,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const closeModal = useCallback(() => dispatch({ type: 'SET_MODAL', payload: null }), []);
 
   // ─── Data fetching ────────────────────────────────────────────────────────
-  const fetchRouteData = useCallback(async (route: Route, params: FetchParams) => {
-    const endpoint = routeEndpoint(route);
-    if (!endpoint) return;
-    dispatch({ type: 'SET_LOADING', payload: true });
-    try {
-      const sp = new URLSearchParams();
-      if (params.q) sp.set('q', params.q);
-      if (params.status && params.status !== 'ALL') sp.set('status', params.status);
-      if (params.resFilter && params.resFilter !== 'ALL') sp.set('resFilter', params.resFilter);
-      if (params.dateFrom) sp.set('from', params.dateFrom);
-      if (params.dateTo)   sp.set('to',   params.dateTo);
-      sp.set('page', String(params.page));
-
-      const res = await fetch(`${endpoint}?${sp}`);
-      if (!res.ok) return;
-      const json = await res.json();
-      const key = routeDataKey(route);
-      if (key && Array.isArray(json.items)) {
-        dispatch({ type: 'UPDATE_DATA', payload: { [key]: json.items } });
-      }
-      dispatch({ type: 'SET_TOTAL_PAGES',  payload: json.totalPages ?? 1 });
-      dispatch({ type: 'SET_SERVER_TOTAL', payload: json.total ?? (json.items?.length ?? 0) });
-    } catch {
-      // keep existing seed data on error
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, []);
-
   const fetchSummary = useCallback(async () => {
     dispatch({ type: 'SET_SUMMARY_LOADING', payload: true });
     try {
@@ -280,17 +185,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Re-fetch the current section (and optionally the consolidated summary)
-  // after a successful mutation, so the UI reflects the server's truth rather
-  // than an optimistic guess. Reuses the existing fetchers with the filters
-  // currently held in state.
-  const revalidate = useCallback((route: Route, withSummary = false) => {
-    fetchRouteData(route, {
-      q: state.q, status: state.status, resFilter: state.resFilter,
-      dateFrom: state.dateFrom, dateTo: state.dateTo, page: state.page,
-    });
+  // After a successful mutation, refresh the current server page. This keeps
+  // the same URL, including search-param filters and pagination.
+  const refreshCurrentRoute = useCallback((withSummary = false) => {
+    router.refresh();
     if (withSummary) fetchSummary();
-  }, [state.q, state.status, state.resFilter, state.dateFrom, state.dateTo, state.page, fetchRouteData, fetchSummary]);
+  }, [router, fetchSummary]);
 
   // ─── Mutations ────────────────────────────────────────────────────────────
   // Critical admin mutations only touch local state AFTER a 2xx response, then
@@ -324,13 +224,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }});
       dispatch({ type: 'SET_MODAL', payload: null });
       showToast(`Se editó el cliente ${[nombre, apellido].filter(Boolean).join(' ')}`);
-      revalidate('clientes');
+      refreshCurrentRoute();
     } catch {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red — no se aplicó el cambio.' });
     } finally {
       dispatch({ type: 'SET_SAVING', payload: false });
     }
-  }, [state, showToast, revalidate]);
+  }, [state, showToast, refreshCurrentRoute]);
 
   const saveWorker = useCallback(async () => {
     const { modal, data } = state;
@@ -358,11 +258,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }});
       dispatch({ type: 'SET_MODAL', payload: null });
       showToast(`Se actualizó el estado de ${name} a ${WORKER_STATUS_LABEL[modal.status]}`);
-      revalidate('workers');
+      refreshCurrentRoute();
     } finally {
       dispatch({ type: 'SET_SAVING', payload: false });
     }
-  }, [state, showToast, revalidate]);
+  }, [state, showToast, refreshCurrentRoute]);
 
   const saveService = useCallback(async () => {
     const { form, modal, data } = state;
@@ -392,7 +292,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: data.serviceTypes.map(t => t.id === modal.id ? updated : t) }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast(`Se editó el tipo de servicio ${nombre}`);
-        revalidate('services');
+        refreshCurrentRoute();
       } else {
         const res = await fetch('/api/cp/services', {
           method: 'POST',
@@ -410,14 +310,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: [nuevo, ...data.serviceTypes] }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast(`Se creó el tipo de servicio ${nombre}`);
-        revalidate('services');
+        refreshCurrentRoute();
       }
     } catch {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red. Verificá la conexión.' });
     } finally {
       dispatch({ type: 'SET_SAVING', payload: false });
     }
-  }, [state, showToast, revalidate]);
+  }, [state, showToast, refreshCurrentRoute]);
 
   const saveCommission = useCallback(async () => {
     const v = state.commissionInput.trim();
@@ -462,7 +362,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const valor  = parseFloat(String(form.valor));
     if (!nombre) { dispatch({ type: 'SET_FORM_ERROR', payload: 'El nombre es obligatorio.' }); return; }
     if (!(valor > 0)) { dispatch({ type: 'SET_FORM_ERROR', payload: 'El valor debe ser mayor a 0.' }); return; }
-    if (form.tipoDescuento === 'porcentaje' && valor > 100) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Un descuento porcentual no puede superar el 100%.' }); return; }
+    if (form.tipoDescuento === '%' && valor > 100) { dispatch({ type: 'SET_FORM_ERROR', payload: 'Un descuento porcentual no puede superar el 100%.' }); return; }
     if (!form.fechaInicio) { dispatch({ type: 'SET_FORM_ERROR', payload: 'La fecha de inicio es obligatoria.' }); return; }
     if (form.fechaFin && form.fechaFin < (form.fechaInicio || '')) { dispatch({ type: 'SET_FORM_ERROR', payload: 'La fecha de fin no puede ser anterior al inicio.' }); return; }
 
@@ -470,7 +370,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const payload = {
       nombre,
       descripcion:   String(form.descripcion || '').trim(),
-      tipoDescuento: form.tipoDescuento || 'porcentaje' as const,
+      tipoDescuento: form.tipoDescuento || '%',
       valor,
       categorias:    form.categorias || [],
       precioMinimo:  (form.precioMinimo === '' || form.precioMinimo == null) ? null : parseFloat(String(form.precioMinimo)),
@@ -498,7 +398,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'UPDATE_DATA', payload: { promotions: data.promotions.map(p => p.id === modal.id ? updated : p) }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast(`Se editó la promoción ${nombre}`);
-        revalidate('promotions');
+        refreshCurrentRoute();
       } else {
         const res = await fetch('/api/cp/promotions', {
           method: 'POST',
@@ -516,14 +416,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'UPDATE_DATA', payload: { promotions: [nueva, ...data.promotions] }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast(`Se creó la promoción ${nombre}`);
-        revalidate('promotions');
+        refreshCurrentRoute();
       }
     } catch {
       dispatch({ type: 'SET_FORM_ERROR', payload: 'Error de red. Verificá la conexión.' });
     } finally {
       dispatch({ type: 'SET_SAVING', payload: false });
     }
-  }, [state, showToast, revalidate]);
+  }, [state, showToast, refreshCurrentRoute]);
 
   const saveResolve = useCallback(async () => {
     const { modal, data } = state;
@@ -558,11 +458,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       dispatch({ type: 'SET_MODAL', payload: null });
       showToast(`Se resolvió la disputa a ${decision === 'AFavor' ? 'favor' : 'contra'} del reportado`);
-      revalidate('feedback', true);
+      refreshCurrentRoute(true);
     } finally {
       dispatch({ type: 'SET_SAVING', payload: false });
     }
-  }, [state, showToast, revalidate]);
+  }, [state, showToast, refreshCurrentRoute]);
 
   const deleteCliente = useCallback(async (id: string, name: string) => {
     let res: Response;
@@ -579,8 +479,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_DATA', payload: { clientes: state.data.clientes.filter(c => c.id_clerk !== id) }});
     dispatch({ type: 'SET_MODAL', payload: null });
     showToast(`Se eliminó el cliente ${name}`);
-    revalidate('clientes');
-  }, [state.data.clientes, showToast, revalidate]);
+    refreshCurrentRoute();
+  }, [state.data.clientes, showToast, refreshCurrentRoute]);
 
   const deleteService = useCallback(async (id: string, name: string) => {
     try {
@@ -597,8 +497,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_DATA', payload: { serviceTypes: state.data.serviceTypes.filter(t => t.id !== id) }});
     dispatch({ type: 'SET_MODAL', payload: null });
     showToast(`Se eliminó el tipo de servicio ${name}`);
-    revalidate('services');
-  }, [state.data.serviceTypes, showToast, revalidate]);
+    refreshCurrentRoute();
+  }, [state.data.serviceTypes, showToast, refreshCurrentRoute]);
 
   const deletePromo = useCallback(async (id: number, name: string) => {
     let res: Response;
@@ -615,8 +515,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_DATA', payload: { promotions: state.data.promotions.map(p => p.id === id ? { ...p, eliminada: true } : p) }});
     dispatch({ type: 'SET_MODAL', payload: null });
     showToast(`Se eliminó la promoción ${name}`);
-    revalidate('promotions');
-  }, [state.data.promotions, showToast, revalidate]);
+    refreshCurrentRoute();
+  }, [state.data.promotions, showToast, refreshCurrentRoute]);
 
   // Apply persisted theme once, after hydration. The active section is now
   // driven by the URL (Next.js routing), not by localStorage.
@@ -632,7 +532,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{
       state, dispatch, setTheme, showToast, closeModal,
-      fetchRouteData, fetchSummary, fetchCommission, fetchReportDetail,
+      fetchSummary, fetchCommission, fetchReportDetail,
       saveCliente, saveWorker, saveService, saveCommission, savePromo, saveResolve,
       deleteCliente, deleteService, deletePromo,
     }}>

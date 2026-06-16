@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { ENV, drHeaders, actor, configured } from '@/lib/server/config';
+import { CACHE_TAGS } from '@/lib/server/cache';
 import type { ServiceType } from '@/lib/types';
 
 function normalize(s: Record<string, unknown>): ServiceType {
@@ -34,6 +36,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     );
     const json = await res.json();
     if (!res.ok) return NextResponse.json(json, { status: res.status });
+    revalidateTag(CACHE_TAGS.driver, 'max');
+    revalidateTag(CACHE_TAGS.summary, 'max');
     return NextResponse.json({ data: normalize(json.data || json) });
   } catch {
     return NextResponse.json({ error: 'Error de conexión con DriverApp' }, { status: 503 });
@@ -59,6 +63,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     );
     const json = await res.json();
     if (!res.ok) return NextResponse.json(json, { status: res.status });
+    revalidateTag(CACHE_TAGS.driver, 'max');
+    revalidateTag(CACHE_TAGS.summary, 'max');
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Error de conexión con DriverApp' }, { status: 503 });

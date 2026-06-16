@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { ENV, pmHeaders, actor, configured } from '@/lib/server/config';
+import { CACHE_TAGS } from '@/lib/server/cache';
 
 export async function GET() {
   if (!configured(ENV.payments.base)) {
@@ -41,6 +43,8 @@ export async function PATCH(req: NextRequest) {
     });
     const json = await res.json();
     if (!res.ok) return NextResponse.json(json, { status: res.status });
+    revalidateTag(CACHE_TAGS.payments, 'max');
+    revalidateTag(CACHE_TAGS.summary, 'max');
     const c = json.commission || {};
     return NextResponse.json({
       data: {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { ENV, drHeaders, actor, configured } from '@/lib/server/config';
+import { CACHE_TAGS } from '@/lib/server/cache';
 import type { ServiceType } from '@/lib/types';
 
 function normalize(s: Record<string, unknown>): ServiceType {
@@ -21,9 +23,10 @@ export async function GET(req: NextRequest) {
     const sp = new URLSearchParams();
     const q    = req.nextUrl.searchParams.get('q')    || '';
     const page = req.nextUrl.searchParams.get('page') || '1';
+    const limit = req.nextUrl.searchParams.get('limit') || '20';
     if (q) sp.set('q', q);
     sp.set('page', page);
-    sp.set('limit', '20');
+    sp.set('limit', limit);
 
     const res = await fetch(`${ENV.driver.base}/api/control-plane/service-types?${sp}`, {
       headers: drHeaders(),
@@ -61,6 +64,8 @@ export async function POST(req: NextRequest) {
     });
     const json = await res.json();
     if (!res.ok) return NextResponse.json(json, { status: res.status });
+    revalidateTag(CACHE_TAGS.driver, 'max');
+    revalidateTag(CACHE_TAGS.summary, 'max');
     return NextResponse.json({ data: normalize(json.data || json) }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Error de conexión con DriverApp' }, { status: 503 });

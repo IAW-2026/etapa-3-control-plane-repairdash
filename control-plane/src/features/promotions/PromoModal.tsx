@@ -1,11 +1,11 @@
 'use client';
 import { useStore } from '@/lib/store';
 import { Spinner } from '@/components/ui/Spinner';
-
-const CATS = ['Electricidad', 'Plomería', 'Cerrajería', 'Gas', 'Aire acondicionado'];
+import { useServiceTypes } from './useServiceTypes';
 
 export function PromoModal() {
   const { state, dispatch, closeModal, savePromo } = useStore();
+  const { services, loading } = useServiceTypes();
   const { modal, form, formError } = state;
   if (modal?.type !== 'promo') return null;
 
@@ -20,7 +20,7 @@ export function PromoModal() {
     dispatch({ type: 'SET_FORM_FIELD', payload: { key: 'categorias', value: cs } });
   };
 
-  const tipo = form.tipoDescuento || 'porcentaje';
+  const tipo = form.tipoDescuento || '%';
 
   return (
     <div className="modal-overlay-top">
@@ -45,10 +45,10 @@ export function PromoModal() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>Tipo de descuento</label>
             <div style={{ display: 'flex', padding: 3, borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-              {[['porcentaje', 'Porcentaje'], ['monto_fijo', 'Monto fijo']].map(([val, label]) => (
+              {[['%', 'Porcentaje'], ['$', 'Monto fijo']].map(([val, label]) => (
                 <button
                   key={val}
-                  onClick={() => dispatch({ type: 'SET_FORM_FIELD', payload: { key: 'tipoDescuento', value: val as 'porcentaje' } })}
+                  onClick={() => dispatch({ type: 'SET_FORM_FIELD', payload: { key: 'tipoDescuento', value: val as '%' | '$' } })}
                   style={{
                     flex: 1, border: 'none', borderRadius: 8, padding: '8px 6px',
                     fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
@@ -63,7 +63,7 @@ export function PromoModal() {
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>Valor ({tipo === 'monto_fijo' ? 'ARS' : '%'})</label>
+            <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>Valor ({tipo === '$' ? 'ARS' : '%'})</label>
             <input type="number" value={form.valor == null ? '' : String(form.valor)} onChange={setField('valor')} className="input-base" />
           </div>
         </div>
@@ -71,12 +71,18 @@ export function PromoModal() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>Categorías</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {CATS.map(cat => {
-              const sel = (form.categorias || []).includes(cat);
+            {loading && services.length === 0 && (
+              <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>Cargando tipos de servicio...</span>
+            )}
+            {!loading && services.length === 0 && (
+              <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>No hay tipos de servicio disponibles.</span>
+            )}
+            {services.map(service => {
+              const sel = (form.categorias || []).includes(service.id);
               return (
                 <button
-                  key={cat}
-                  onClick={() => toggleCat(cat)}
+                  key={service.id}
+                  onClick={() => toggleCat(service.id)}
                   style={{
                     border: `1px solid ${sel ? 'var(--pink)' : 'var(--border)'}`,
                     borderRadius: 999, padding: '6px 13px', fontSize: 12.5, fontWeight: 600,
@@ -84,7 +90,7 @@ export function PromoModal() {
                     color: sel ? 'var(--text)' : 'var(--text2)', transition: 'all .12s',
                   }}
                 >
-                  {cat}
+                  {service.nombre}
                 </button>
               );
             })}

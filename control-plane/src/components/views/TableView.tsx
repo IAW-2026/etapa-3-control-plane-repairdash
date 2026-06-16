@@ -1,13 +1,28 @@
 'use client';
 import { useStore } from '@/lib/store';
+import { useSyncRoute } from '@/lib/routes';
 import { TableShell } from '@/components/table/TableShell';
 import { TABLE_REGISTRY } from '@/features/registry';
 import type { Route } from '@/lib/types';
+import type { ListFilters } from '@/lib/search-params';
 
 // Thin dispatcher: looks up the feature entry for the route and renders the
 // shared TableShell with that feature's <table>. All per-domain table markup
 // lives under src/features/<domain>/.
-export function TableView({ route }: { route: Route }) {
+export function TableView({
+  route,
+  filters,
+  rows,
+  total,
+  totalPages,
+}: {
+  route: Route;
+  filters: ListFilters;
+  rows: Record<string, unknown>[];
+  total: number;
+  totalPages: number;
+}) {
+  useSyncRoute(route);
   const { dispatch } = useStore();
   const entry = TABLE_REGISTRY[route];
   if (!entry) return null;
@@ -17,7 +32,7 @@ export function TableView({ route }: { route: Route }) {
     ? () => {
         if (route === 'promotions') {
           dispatch({ type: 'SET_MODAL', payload: { type: 'promo', id: null } });
-          dispatch({ type: 'SET_FORM', payload: { nombre: '', descripcion: '', tipoDescuento: 'porcentaje', valor: '', categorias: [], precioMinimo: '', destacada: false, usoUnico: false, fechaInicio: '', fechaFin: '' } });
+          dispatch({ type: 'SET_FORM', payload: { nombre: '', descripcion: '', tipoDescuento: '%', valor: '', categorias: [], precioMinimo: '', destacada: false, usoUnico: false, fechaInicio: '', fechaFin: '' } });
         } else {
           dispatch({ type: 'SET_MODAL', payload: { type: 'service', id: null } });
           dispatch({ type: 'SET_FORM', payload: { nombre: '', descripcion: '', precio: '' } });
@@ -26,7 +41,7 @@ export function TableView({ route }: { route: Route }) {
     : undefined;
 
   return (
-    <TableShell route={route} meta={meta} onCreate={onCreate} footer={footer}>
+    <TableShell route={route} meta={meta} filters={filters} rows={rows} total={total} totalPages={totalPages} onCreate={onCreate} footer={footer}>
       {render}
     </TableShell>
   );

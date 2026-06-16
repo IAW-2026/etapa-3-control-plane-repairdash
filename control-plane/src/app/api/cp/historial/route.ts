@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ENV, promoHeaders, configured } from '@/lib/server/config';
+import { CACHE_TAGS, CACHE_TTL } from '@/lib/server/cache';
 import type { PromoHistory } from '@/lib/types';
 
 function normalize(h: Record<string, unknown>): PromoHistory {
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     const res = await fetch(`${ENV.promociones.base}/api/historial?${sp}`, {
       headers: promoHeaders(),
-      cache: 'no-store',
+      next: { revalidate: CACHE_TTL.promoHistory, tags: [CACHE_TAGS.promotions] },
     });
     if (!res.ok) return NextResponse.json({ error: 'Upstream error' }, { status: res.status });
     const json = await res.json();

@@ -1,8 +1,6 @@
-'use client';
-import { useSyncRoute } from '@/lib/routes';
-import { TableView } from '@/components/views/TableView';
+import { ServerTablePage } from '@/components/views/ServerTablePage';
+import type { SearchParamInput } from '@/lib/search-params';
 
-export default function ClientesPage() {
-  useSyncRoute('clientes');
-  return <TableView route="clientes" />;
+export default function ClientesPage({ searchParams }: { searchParams: Promise<SearchParamInput> }) {
+  return <ServerTablePage route="clientes" searchParams={searchParams} />;
 }

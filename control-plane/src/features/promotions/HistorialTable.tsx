@@ -19,7 +19,7 @@ export function HistorialTable({ rows }: { rows: PromoHistory[] }) {
             <tr key={h.id} className="tr-base">
               <td className="td">
                 <div style={{ fontSize: 14, fontWeight: 600 }}>{h.nombre}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>{promo ? (promo.tipoDescuento === 'porcentaje' ? promo.valor + '% de descuento' : 'Monto fijo') : '—'}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>{promo ? (promo.tipoDescuento === '%' ? promo.valor + '% de descuento' : 'Monto fijo') : '—'}</div>
               </td>
               <td className="td" style={{ fontSize: 13.5 }}>{h.usuario}</td>
               <td className="td" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text2)' }}>trabajo #{h.trabajoId}</td>

@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import { ENV, rdHeaders, drHeaders, pmHeaders, fbHeaders, promoHeaders, configured } from '@/lib/server/config';
+import { CACHE_TAGS, CACHE_TTL } from '@/lib/server/cache';
 
-async function safeFetch(url: string, headers: Record<string, string>) {
+type CacheTag = typeof CACHE_TAGS[keyof typeof CACHE_TAGS];
+
+async function safeFetch(url: string, headers: Record<string, string>, tags: CacheTag[]) {
   try {
-    const res = await fetch(url, { headers, cache: 'no-store', redirect: 'manual' });
+    const res = await fetch(url, {
+      headers,
+      next: { revalidate: CACHE_TTL.summary, tags },
+      redirect: 'manual',
+    });
     if (!res.ok) return null;
     const ct = res.headers.get('content-type') || '';
     if (!ct.includes('application/json')) return null; // e.g. a login HTML page
@@ -16,25 +23,25 @@ async function safeFetch(url: string, headers: Record<string, string>) {
 export async function GET() {
   const [rdClientes, rdViajes, drSum, pmSum, fbSum, promoList, promoHist] = await Promise.all([
     configured(ENV.repairdash.base)
-      ? safeFetch(`${ENV.repairdash.base}/api/super-admin/clientes/count`, rdHeaders())
+      ? safeFetch(`${ENV.repairdash.base}/api/super-admin/clientes/count`, rdHeaders(), [CACHE_TAGS.summary, CACHE_TAGS.repairdash])
       : null,
     configured(ENV.repairdash.base)
-      ? safeFetch(`${ENV.repairdash.base}/api/super-admin/viajes/count`, rdHeaders())
+      ? safeFetch(`${ENV.repairdash.base}/api/super-admin/viajes/count`, rdHeaders(), [CACHE_TAGS.summary, CACHE_TAGS.repairdash])
       : null,
     configured(ENV.driver.base)
-      ? safeFetch(`${ENV.driver.base}/api/control-plane/summary`, drHeaders())
+      ? safeFetch(`${ENV.driver.base}/api/control-plane/summary`, drHeaders(), [CACHE_TAGS.summary, CACHE_TAGS.driver])
       : null,
     configured(ENV.payments.base)
-      ? safeFetch(`${ENV.payments.base}/api/control-plane/summary`, pmHeaders())
+      ? safeFetch(`${ENV.payments.base}/api/control-plane/summary`, pmHeaders(), [CACHE_TAGS.summary, CACHE_TAGS.payments])
       : null,
     configured(ENV.feedback.base)
-      ? safeFetch(`${ENV.feedback.base}/api/control-plane/summary`, fbHeaders())
+      ? safeFetch(`${ENV.feedback.base}/api/control-plane/summary`, fbHeaders(), [CACHE_TAGS.summary, CACHE_TAGS.feedback])
       : null,
     configured(ENV.promociones.base)
-      ? safeFetch(`${ENV.promociones.base}/api/admin/promociones?page=1&limit=1`, promoHeaders())
+      ? safeFetch(`${ENV.promociones.base}/api/admin/promociones?page=1&limit=1`, promoHeaders(), [CACHE_TAGS.summary, CACHE_TAGS.promotions])
       : null,
     configured(ENV.promociones.base)
-      ? safeFetch(`${ENV.promociones.base}/api/historial?page=1&limit=1`, promoHeaders())
+      ? safeFetch(`${ENV.promociones.base}/api/historial?page=1&limit=1`, promoHeaders(), [CACHE_TAGS.summary, CACHE_TAGS.promotions])
       : null,
   ]);
 

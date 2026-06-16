@@ -75,7 +75,7 @@ export const promoEstado = (p: { eliminada: boolean; fechaInicio: string; fechaF
 };
 
 export const promoValor = (p: { tipoDescuento: string; valor: number }): string => {
-  return p.tipoDescuento === 'porcentaje'
+  return p.tipoDescuento === '%'
     ? p.valor + '%'
     : '$ ' + p.valor.toLocaleString('es-AR');
 };

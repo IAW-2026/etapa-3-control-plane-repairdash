@@ -143,7 +143,7 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
                 onClick={() => toggle(entry.key)}
                 style={{
                   ...linkStyle(hasActiveChild && !isOpen),
-                  width: 'auto', border: 'none', textAlign: 'left', font: 'inherit',
+                  width: 'auto', border: 'none', textAlign: 'left', fontFamily: 'inherit',
                   fontSize: 14, fontWeight: hasActiveChild ? 600 : 400,
                   color: hasActiveChild ? 'var(--text)' : 'var(--text2)',
                 }}

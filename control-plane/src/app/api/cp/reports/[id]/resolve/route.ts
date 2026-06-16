@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { ENV, fbHeaders, actor, configured } from '@/lib/server/config';
+import { CACHE_TAGS } from '@/lib/server/cache';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,6 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     );
     const json = await res.json();
     if (!res.ok) return NextResponse.json(json, { status: res.status });
+    revalidateTag(CACHE_TAGS.feedback, 'max');
+    revalidateTag(CACHE_TAGS.summary, 'max');
     return NextResponse.json({ data: json });
   } catch {
     return NextResponse.json({ error: 'Error de conexión con Feedback' }, { status: 503 });

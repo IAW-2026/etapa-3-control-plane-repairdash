@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { ENV, promoHeaders, configured } from '@/lib/server/config';
+import { CACHE_TAGS } from '@/lib/server/cache';
 import type { Promotion } from '@/lib/types';
+
+function normalizeTipoDescuento(value: unknown): Promotion['tipoDescuento'] {
+  return value === '$' || value === 'monto_fijo' ? '$' : '%';
+}
 
 function normalize(p: Record<string, unknown>): Promotion {
   return {
     id:            p.id            as number,
     nombre:        (p.nombre        as string)  || '',
-    tipoDescuento: (p.tipoDescuento as Promotion['tipoDescuento']) || 'porcentaje',
+    tipoDescuento: normalizeTipoDescuento(p.tipoDescuento),
     valor:         (p.valor         as number)  || 0,
     descripcion:   (p.descripcion   as string)  || '',
     destacada:     !!(p.destacada),
@@ -88,6 +94,8 @@ export async function POST(req: NextRequest) {
     });
     const json = await res.json();
     if (!res.ok) return NextResponse.json(json, { status: res.status });
+    revalidateTag(CACHE_TAGS.promotions, 'max');
+    revalidateTag(CACHE_TAGS.summary, 'max');
     return NextResponse.json({ data: normalize(json) }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Error de conexión con Promociones' }, { status: 503 });

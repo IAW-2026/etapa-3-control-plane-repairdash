@@ -1,44 +1,39 @@
 'use client';
-import { useEffect, ReactNode } from 'react';
-import { useStore } from '@/lib/store';
+import { ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { STATUS_META } from '@/lib/utils';
 import type { Route } from '@/lib/types';
 import { Pagination } from './Pagination';
-import { TableSkeleton } from '@/components/ui/Skeleton';
 import { TONE_COLORS, type TableMeta } from './meta';
+import { paramsHref, setListFilterParam, type ListFilters } from '@/lib/search-params';
+import { SearchParamInput } from './SearchParamInput';
 
 type AnyItem = Record<string, unknown>;
 
-// Generic chrome shared by every table section: header (title/app/endpoint/sub
-// + optional create button), filter bar (search / status / dates / count), the
-// scrollable table container, loading & empty states, and pagination. The
-// actual <table> is supplied per feature through the `children` render-prop,
-// which receives the current page of rows. Owns the debounced data fetch keyed
-// by `route` + the store's filter state.
-export function TableShell({ route, meta, onCreate, footer, children }: {
+// Generic chrome shared by every table section: header, URL-driven filters,
+// scrollable table container, empty state and pagination. The page owns the
+// server fetch and passes the current rows in.
+export function TableShell({ route: _route, meta, filters, rows, total, totalPages, onCreate, footer, children }: {
   route: Route;
   meta: TableMeta;
+  filters: ListFilters;
+  rows: AnyItem[];
+  total: number;
+  totalPages: number;
   onCreate?: () => void;
   footer?: ReactNode;
   children: (rows: AnyItem[]) => ReactNode;
 }) {
-  const { state, dispatch, fetchRouteData } = useStore();
-  const { data, q, status, dateFrom, dateTo, page, loading, serverTotal, totalPages: serverTotalPages, resFilter } = state;
+  void _route;
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const tone = TONE_COLORS[meta.tone || 'mut'] || ['var(--mut-soft)', 'var(--mut)'];
 
-  // Load the current page from the real upstream API whenever the route or any
-  // filter/pagination input changes. Text search is debounced.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      fetchRouteData(route, { q, status, resFilter, dateFrom, dateTo, page });
-    }, q ? 300 : 0);
-    return () => clearTimeout(t);
-  }, [route, q, status, resFilter, dateFrom, dateTo, page, fetchRouteData]);
-
-  const sliced = (data[meta.dataKey] as unknown as AnyItem[]) || [];
-  const total = serverTotal;
-  const totalPages = Math.max(1, serverTotalPages);
-
+  const updateParam = (key: 'q' | 'status' | 'from' | 'to', value: string) => {
+    const next = setListFilterParam(new URLSearchParams(searchParams.toString()), key, value);
+    router.replace(paramsHref(pathname, next));
+  };
   const statusOptions = [{ value: 'ALL', label: 'Todos los estados' }, ...(meta.statuses || []).map(st => ({ value: st, label: (STATUS_META[st] || { label: st }).label }))];
 
   return (
@@ -63,21 +58,22 @@ export function TableShell({ route, meta, onCreate, footer, children }: {
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '18px 0 14px' }}>
-        <input
-          placeholder={meta.search || 'Buscar…'}
-          value={q}
-          onChange={e => dispatch({ type: 'SET_Q', payload: e.target.value })}
+        <SearchParamInput
+          key={`${pathname}:${filters.q}`}
+          placeholder={meta.search || 'Buscar...'}
+          initialValue={filters.q}
+          onApply={value => updateParam('q', value)}
           style={{ flex: 1, minWidth: 190, maxWidth: 340, padding: '9px 13px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13.5, outline: 'none' }}
         />
         {meta.statuses && (
-          <select value={status} onChange={e => dispatch({ type: 'SET_STATUS', payload: e.target.value })} className="select-base">
+          <select value={filters.status} onChange={e => updateParam('status', e.target.value)} className="select-base">
             {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         )}
         {meta.dates && (
           <>
-            <input type="date" value={dateFrom} onChange={e => dispatch({ type: 'SET_DATE_FROM', payload: e.target.value })} className="input-sm" />
-            <input type="date" value={dateTo} onChange={e => dispatch({ type: 'SET_DATE_TO', payload: e.target.value })} className="input-sm" />
+            <input type="date" value={filters.dateFrom} onChange={e => updateParam('from', e.target.value)} className="input-sm" />
+            <input type="date" value={filters.dateTo} onChange={e => updateParam('to', e.target.value)} className="input-sm" />
           </>
         )}
         <span style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--text3)' }}>{total} {total === 1 ? 'resultado' : 'resultados'}</span>
@@ -86,14 +82,14 @@ export function TableShell({ route, meta, onCreate, footer, children }: {
       {/* Table container */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          {loading ? <TableSkeleton cols={meta.skeletonCols ?? 5} /> : children(sliced)}
+          {children(rows)}
         </div>
 
-        {!loading && sliced.length === 0 && (
+        {rows.length === 0 && (
           <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>Sin resultados para los filtros aplicados.</div>
         )}
 
-        <Pagination page={page} totalPages={totalPages} total={total} />
+        <Pagination page={filters.page} totalPages={totalPages} total={total} />
       </div>
 
       {footer}

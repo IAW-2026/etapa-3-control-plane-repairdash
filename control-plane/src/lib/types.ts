@@ -138,7 +138,7 @@ export interface Report {
 export interface Promotion {
   id: number;
   nombre: string;
-  tipoDescuento: 'porcentaje' | 'monto_fijo';
+  tipoDescuento: '%' | '$';
   valor: number;
   descripcion: string;
   destacada: boolean;
@@ -219,7 +219,7 @@ export interface FormState {
   apellido?: string;
   descripcion?: string;
   precio?: string | number;
-  tipoDescuento?: 'porcentaje' | 'monto_fijo';
+  tipoDescuento?: '%' | '$';
   valor?: string | number;
   categorias?: string[];
   precioMinimo?: string | number;

@@ -1,0 +1,74 @@
+export type SearchParamInput = Record<string, string | string[] | undefined>;
+
+export interface ListFilters {
+  q: string;
+  status: string;
+  resFilter: string;
+  dateFrom: string;
+  dateTo: string;
+  page: number;
+}
+
+export const DEFAULT_LIST_FILTERS: ListFilters = {
+  q: '',
+  status: 'ALL',
+  resFilter: 'ALL',
+  dateFrom: '',
+  dateTo: '',
+  page: 1,
+};
+
+function first(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? (value[0] || '') : (value || '');
+}
+
+function parsePage(value: string): number {
+  const page = Number.parseInt(value, 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
+export function parseListFilters(searchParams: SearchParamInput = {}): ListFilters {
+  return {
+    q: first(searchParams.q).trim(),
+    status: first(searchParams.status) || 'ALL',
+    resFilter: first(searchParams.resFilter) || 'ALL',
+    dateFrom: first(searchParams.from),
+    dateTo: first(searchParams.to),
+    page: parsePage(first(searchParams.page)),
+  };
+}
+
+export function filtersToSearchParams(filters: ListFilters): URLSearchParams {
+  const sp = new URLSearchParams();
+  if (filters.q) sp.set('q', filters.q);
+  if (filters.status && filters.status !== 'ALL') sp.set('status', filters.status);
+  if (filters.resFilter && filters.resFilter !== 'ALL') sp.set('resFilter', filters.resFilter);
+  if (filters.dateFrom) sp.set('from', filters.dateFrom);
+  if (filters.dateTo) sp.set('to', filters.dateTo);
+  if (filters.page > 1) sp.set('page', String(filters.page));
+  return sp;
+}
+
+export function setListFilterParam(
+  current: URLSearchParams,
+  key: 'q' | 'status' | 'resFilter' | 'from' | 'to' | 'page',
+  value: string | number,
+  resetPage = true,
+): URLSearchParams {
+  const next = new URLSearchParams(current);
+  const normalized = String(value).trim();
+
+  if (!normalized || normalized === 'ALL' || (key === 'page' && normalized === '1')) {
+    next.delete(key);
+  } else {
+    next.set(key, normalized);
+  }
+
+  if (resetPage && key !== 'page') next.delete('page');
+  return next;
+}
+
+export function paramsHref(pathname: string, params: URLSearchParams): string {
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
