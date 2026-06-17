@@ -5,6 +5,7 @@ import { useSyncRoute } from '@/lib/routes';
 import { getBadge, STATUS_META, TONES, fdate } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Table, type Column } from '@/components/table/Table';
 import { Pagination } from '@/components/table/Pagination';
 import { SearchParamInput } from '@/components/table/SearchParamInput';
 import { paramsHref, setListFilterParam, type ListFilters } from '@/lib/search-params';
@@ -42,6 +43,60 @@ export function FeedbackView({
     { label: 'En revision', value: fmt(fb?.reportesEnRevision), color: 'var(--violet)' },
     { label: 'Resueltos', value: fmt(fb?.reportesResueltos), color: 'var(--ok)' },
     { label: 'Reviews pend.', value: fmt(fb?.reviewsPendientes), color: 'var(--text)' },
+  ];
+
+  const columns: Column[] = [
+    {
+      label: 'Reporte',
+      render: r => (
+        <div style={{ maxWidth: 320 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text3)' }}>{r.id} - {r.trabajo.tipoDeTrabajo}</div>
+          <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</div>
+        </div>
+      ),
+    },
+    {
+      label: 'Reportante → Reportado',
+      render: r => (
+        <span style={{ fontSize: 13 }}>
+          <span style={{ fontWeight: 600 }}>{r.reportante.nombre} {r.reportante.apellido}</span>
+          <span style={{ color: 'var(--text3)' }}>{' → '}</span>
+          <span>{r.reportado.nombre} {r.reportado.apellido}</span>
+        </span>
+      ),
+    },
+    {
+      label: 'Estado',
+      render: r => { const b = getBadge(r.estado); return <Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} />; },
+    },
+    {
+      label: 'Decisión',
+      render: r => {
+        const decMeta = r.decision ? STATUS_META[r.decision] : null;
+        const decColor = decMeta ? TONES[decMeta.tone][1] : 'var(--text3)';
+        return <span style={{ fontSize: 12.5, fontWeight: 600, color: decColor }}>{r.decision ? STATUS_META[r.decision].label : '---'}</span>;
+      },
+    },
+    {
+      label: 'Creado',
+      render: r => <span style={{ fontSize: 13, color: 'var(--text2)' }}>{fdate(r.creadoEn)}</span>,
+    },
+    {
+      label: '',
+      align: 'right',
+      render: r => {
+        const resolvable = r.estado === 'PRUEBAS_AGREGADAS';
+        return (
+          <button
+            className="btn-table"
+            style={resolvable ? { borderColor: 'var(--violet)', color: 'var(--violet)' } : {}}
+            onClick={() => dispatch({ type: 'SET_MODAL', payload: { type: 'report', id: r.id, decision: null } })}
+          >
+            {resolvable ? 'Resolver' : 'Ver'}
+          </button>
+        );
+      },
+    },
   ];
 
   return (
@@ -100,49 +155,8 @@ export function FeedbackView({
 
       {/* Table */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
-            <thead>
-              <tr>
-                {['Reporte', 'Reportante -> Reportado', 'Estado', 'Decision', 'Creado', ''].map((h, i) => (
-                  <th key={i} className={`th${i === 5 ? ' th-right' : ''}`}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r => {
-                const b = getBadge(r.estado);
-                const resolvable = r.estado === 'PRUEBAS_AGREGADAS';
-                const decMeta = r.decision ? STATUS_META[r.decision] : null;
-                const decColor = decMeta ? TONES[decMeta.tone][1] : 'var(--text3)';
-                return (
-                  <tr key={r.id} className="tr-base">
-                    <td className="td" style={{ maxWidth: 320 }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text3)' }}>{r.id} - {r.trabajo.tipoDeTrabajo}</div>
-                      <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</div>
-                    </td>
-                    <td className="td" style={{ fontSize: 13 }}>
-                      <span style={{ fontWeight: 600 }}>{r.reportante.nombre} {r.reportante.apellido}</span>
-                      <span style={{ color: 'var(--text3)' }}>{' -> '}</span>
-                      <span>{r.reportado.nombre} {r.reportado.apellido}</span>
-                    </td>
-                    <td className="td"><Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} /></td>
-                    <td className="td"><span style={{ fontSize: 12.5, fontWeight: 600, color: decColor }}>{r.decision ? STATUS_META[r.decision].label : '---'}</span></td>
-                    <td className="td" style={{ fontSize: 13, color: 'var(--text2)' }}>{fdate(r.creadoEn)}</td>
-                    <td className="td" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button
-                        className="btn-table"
-                        style={resolvable ? { borderColor: 'var(--violet)', color: 'var(--violet)' } : {}}
-                        onClick={() => dispatch({ type: 'SET_MODAL', payload: { type: 'report', id: r.id, decision: null } })}
-                      >
-                        {resolvable ? 'Resolver' : 'Ver'}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="table-wrap" style={{ overflowX: 'auto' }}>
+          <Table columns={columns} rows={rows} />
         </div>
         {rows.length === 0 && (
           <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>Sin reportes para los filtros aplicados.</div>
