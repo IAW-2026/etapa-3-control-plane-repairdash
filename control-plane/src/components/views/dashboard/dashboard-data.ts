@@ -31,7 +31,20 @@ export function buildDashboardModel(summary: SummaryData | null | undefined, go:
     commissionUpdated,
     appCards: [
       {
-        name: 'RepairDash',
+        name: 'Usuarios activos',
+        dot: 'var(--ok)',
+        stats: [
+          { val: n(rd?.clientes), label: 'Riders' },
+          { val: n(dr?.workers?.total), label: 'Drivers' },
+          { val: (rd?.clientes ?? 0) + (dr?.workers?.total ?? 0), label: 'Total' },
+        ],
+        links: [
+          { label: 'Clientes ->', color: 'var(--pink)', go: () => go('clientes') },
+          { label: 'Trabajadores ->', color: 'var(--violet)', go: () => go('workers') },
+        ],
+      },
+      {
+        name: 'RiderApp',
         dot: 'var(--pink)',
         stats: [
           { val: n(rd?.clientes), label: 'Clientes' },
@@ -61,7 +74,6 @@ export function buildDashboardModel(summary: SummaryData | null | undefined, go:
         stats: [
           { val: n(sumValues(txByStatus)), label: 'Transacciones' },
           { val: n(sumWdRequested), label: 'Retiros pend.', color: 'var(--warn)' },
-          { val: commissionRate == null ? '---' : commissionRate + '%', label: 'Comision' },
         ],
         links: [
           { label: 'Transacciones ->', color: 'var(--mag)', go: () => go('transactions') },
