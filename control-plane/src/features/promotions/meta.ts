@@ -10,7 +10,6 @@ export const promotionsMeta: TableMeta = {
   statuses: ["activa", "vencida", "programada", "eliminada"],
   create: true,
   createLabel: "+ Nueva promoción",
-  skeletonCols: 6,
   dataKey: "promotions",
 };
 
@@ -22,6 +21,5 @@ export const historialMeta: TableMeta = {
   sub: "Registro de usos de promociones por los riders, con el trabajo asociado y el ahorro aplicado. Solo lectura.",
   search: "Buscar por promoción, usuario o trabajo…",
   dates: true,
-  skeletonCols: 6,
   dataKey: "promoHistory",
 };

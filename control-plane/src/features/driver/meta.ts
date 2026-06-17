@@ -8,7 +8,6 @@ export const workersMeta: TableMeta = {
   sub: "Trabajadores de DriverApp. Desde acá podés activar o desactivar su estado operativo.",
   search: "Buscar por nombre, email o Clerk ID…",
   statuses: ["ONLINE", "OFFLINE", "EN_TRABAJO"],
-  skeletonCols: 6,
   dataKey: "workers",
 };
 
@@ -28,7 +27,6 @@ export const jobsMeta: TableMeta = {
     "FINALIZADO",
     "CANCELADO",
   ],
-  skeletonCols: 7,
   dataKey: "jobs",
 };
 
@@ -41,6 +39,5 @@ export const servicesMeta: TableMeta = {
   search: "Buscar por nombre o descripción…",
   create: true,
   createLabel: "+ Nuevo tipo de servicio",
-  skeletonCols: 5,
   dataKey: "serviceTypes",
 };

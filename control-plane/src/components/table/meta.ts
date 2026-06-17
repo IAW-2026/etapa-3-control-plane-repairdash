@@ -15,13 +15,6 @@ export interface TableMeta {
   dates?: boolean;
   create?: boolean;
   createLabel?: string;
-  // Column count for the loading skeleton; defaults to 5 in TableShell.
-  skeletonCols?: number;
   dataKey: keyof AppData;
 }
 
-export const TONE_COLORS: Record<string, [string, string]> = {
-  pink:   ['var(--pink-soft)',   'var(--pink)'],
-  violet: ['var(--violet-soft)', 'var(--violet)'],
-  mag:    ['var(--mag-soft)',    'var(--mag)'],
-};

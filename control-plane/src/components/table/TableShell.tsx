@@ -3,8 +3,11 @@ import { ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { STATUS_META } from '@/lib/utils';
 import type { Route } from '@/lib/types';
+import { AppBadge } from '@/components/common/AppBadge';
+import { PageHeader } from '@/components/common/PageHeader';
+import { SectionCard } from '@/components/common/SectionCard';
 import { Pagination } from './Pagination';
-import { TONE_COLORS, type TableMeta } from './meta';
+import type { TableMeta } from './meta';
 import { paramsHref, setListFilterParam, type ListFilters } from '@/lib/search-params';
 import { SearchParamInput } from './SearchParamInput';
 
@@ -28,7 +31,6 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tone = TONE_COLORS[meta.tone || 'mut'] || ['var(--mut-soft)', 'var(--mut)'];
 
   const updateParam = (key: 'q' | 'status' | 'from' | 'to', value: string) => {
     const next = setListFilterParam(new URLSearchParams(searchParams.toString()), key, value);
@@ -38,23 +40,12 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', maxWidth: 1280, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, flex: 1, minWidth: 240 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h1 style={{ fontFamily: 'var(--font-grotesk)', fontSize: 'clamp(21px, 3vw, 25px)', fontWeight: 700, margin: 0, letterSpacing: '-.015em' }}>{meta.title}</h1>
-            {meta.app && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 600, padding: '3px 10px', borderRadius: 999, background: tone[0], color: tone[1] }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: tone[1] }} />{meta.app}
-              </span>
-            )}
-          </div>
-          {meta.sub && <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text2)', maxWidth: '68ch' }}>{meta.sub}</p>}
-        </div>
-        {meta.create && (
-          <button className="btn-primary" onClick={onCreate}>{meta.createLabel || '+ Nuevo'}</button>
-        )}
-      </div>
+      <PageHeader
+        title={meta.title}
+        subtitle={meta.sub}
+        badge={meta.app ? <AppBadge label={meta.app} tone={meta.tone} /> : null}
+        action={meta.create ? <button className="btn-primary" onClick={onCreate}>{meta.createLabel || '+ Nuevo'}</button> : null}
+      />
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '18px 0 14px' }}>
@@ -80,7 +71,7 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
       </div>
 
       {/* Table container */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+      <SectionCard style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-wrap" style={{ overflowX: 'auto' }}>
           {children(rows)}
         </div>
@@ -90,7 +81,7 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
         )}
 
         <Pagination page={filters.page} totalPages={totalPages} total={total} />
-      </div>
+      </SectionCard>
 
       {footer}
     </div>

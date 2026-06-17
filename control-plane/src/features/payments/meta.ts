@@ -7,7 +7,6 @@ export const pdriversMeta: TableMeta = {
   tone: "mag",
   sub: "Estado financiero de los drivers en Payments: balances disponibles y bloqueados. Solo lectura.",
   search: "Buscar por nombre, email o CBU/CVU…",
-  skeletonCols: 6,
   dataKey: "pdrivers",
 };
 
@@ -18,7 +17,6 @@ export const pridersMeta: TableMeta = {
   tone: "mag",
   sub: "Riders con actividad de pago en Payments. Solo lectura.",
   search: "Buscar por nombre, email o Clerk ID…",
-  skeletonCols: 5,
   dataKey: "priders",
 };
 
@@ -39,7 +37,6 @@ export const transactionsMeta: TableMeta = {
     "FAILED",
   ],
   dates: true,
-  skeletonCols: 6,
   dataKey: "transactions",
 };
 
@@ -52,6 +49,5 @@ export const withdrawalsMeta: TableMeta = {
   search: "Buscar por ID, driver o email…",
   statuses: ["REQUESTED", "APPROVED", "REJECTED"],
   dates: true,
-  skeletonCols: 5,
   dataKey: "withdrawals",
 };

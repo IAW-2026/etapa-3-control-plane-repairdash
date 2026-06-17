@@ -3,10 +3,13 @@ import { type ReactNode } from 'react';
 
 export interface Column {
   label: string;
+  // The table is intentionally route-agnostic; each feature owns its row shape.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render: (row: any) => ReactNode;
   align?: 'left' | 'right';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function Table({ columns, rows }: { columns: Column[]; rows: any[] }) {
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
