@@ -9,8 +9,6 @@ import type { Route } from '@/lib/types';
 import { buildDashboardModel } from './dashboard-data';
 import { CommissionSummaryCard } from './CommissionSummaryCard';
 import { DashboardAppCard } from './DashboardAppCard';
-import { TransactionStatusBars } from './TransactionStatusBars';
-import { WithdrawalsPendingCard } from './WithdrawalsPendingCard';
 
 export function Dashboard() {
   const { state, fetchSummary } = useStore();
@@ -31,15 +29,10 @@ export function Dashboard() {
         badge={<AppBadge label="Control Plane" tone="violet" />}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, alignItems: 'start' }}>
         {model.appCards.map(card => <DashboardAppCard key={card.name} card={card} loading={loading} />)}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 16, alignItems: 'start' }}>
-        <TransactionStatusBars bars={model.txBars} loading={loading} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ gridColumn: 'span 2' }}>
           <CommissionSummaryCard loading={loading} rate={model.commissionRate} updatedAt={model.commissionUpdated} onEdit={() => go('commission')} />
-          <WithdrawalsPendingCard loading={loading} requested={model.sumWdRequested} onReview={() => go('withdrawals')} />
         </div>
       </div>
     </div>
