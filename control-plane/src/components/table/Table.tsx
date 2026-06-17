@@ -38,7 +38,7 @@ export function Table({ columns, rows }: { columns: Column[]; rows: any[] }) {
                 <div style={{
                   display: 'flex',
                   flexDirection: col.label === '' && col.align === 'right' ? 'row' : 'column',
-                  alignItems: col.label !== '' || col.align !== 'right' ? 'flex-end' : undefined,
+                  alignItems: col.align === 'right' ? 'flex-end' : 'flex-start',
                   justifyContent: col.label === '' && col.align === 'right' ? 'flex-end' : undefined,
                   gap: col.label === '' && col.align === 'right' ? 8 : undefined,
                 }}>
