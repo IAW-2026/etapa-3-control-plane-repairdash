@@ -49,13 +49,15 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '18px 0 14px' }}>
-        <SearchParamInput
-          key={`${pathname}:${filters.q}`}
-          placeholder={meta.search || 'Buscar...'}
-          initialValue={filters.q}
-          onApply={value => updateParam('q', value)}
-          style={{ flex: 1, minWidth: 190, maxWidth: 340, padding: '9px 13px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13.5, outline: 'none' }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 190, maxWidth: 340, gap: 6 }}>
+          <SearchParamInput
+            key={`${pathname}:${filters.q}`}
+            placeholder={meta.search || 'Buscar...'}
+            initialValue={filters.q}
+            onApply={value => updateParam('q', value)}
+            style={{ flex: 1, minWidth: 0, padding: '9px 13px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13.5, outline: 'none' }}
+          />
+        </div>
         {meta.statuses && (
           <select value={filters.status} onChange={e => updateParam('status', e.target.value)} className="select-base">
             {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -67,7 +69,16 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
             <input type="date" value={filters.dateTo} onChange={e => updateParam('to', e.target.value)} className="input-sm" />
           </>
         )}
-        <span style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--text3)' }}>{total} {total === 1 ? 'resultado' : 'resultados'}</span>
+        <button
+          type="button"
+          className="btn-ghost"
+          style={{ minWidth: 120 }}
+          onClick={() => router.replace(pathname)}
+          disabled={!(filters.q || (filters.status && filters.status !== 'ALL') || (filters.resFilter && filters.resFilter !== 'ALL') || filters.dateFrom || filters.dateTo)}
+        >
+          Limpiar filtros
+        </button>
+        <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>{total} {total === 1 ? 'resultado' : 'resultados'}</span>
       </div>
 
       {/* Table container */}

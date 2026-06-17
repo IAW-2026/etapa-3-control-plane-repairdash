@@ -50,8 +50,8 @@ export function PromotionsTable({ rows }: { rows: Promotion[] }) {
         const b = getBadge(est);
         return (
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
-            {p.usoUnico && <span style={{ fontSize: 10.5, color: 'var(--text3)' }}>Uso único</span>}
             <Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} />
+            {p.usoUnico && <span style={{ fontSize: 10.5, color: 'var(--text3)' }}>Uso único</span>}
           </div>
         );
       },
