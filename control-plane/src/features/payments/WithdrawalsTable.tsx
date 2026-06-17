@@ -1,33 +1,37 @@
 'use client';
 import { money, fdate, getBadge } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
+import { Table, type Column } from '@/components/table/Table';
 import type { Withdrawal } from '@/lib/types';
 
 export function WithdrawalsTable({ rows }: { rows: Withdrawal[] }) {
-  return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
-      <thead><tr>
-        {['Retiro', 'Driver', 'Monto', 'Estado', 'Solicitado'].map((h, i) => <th key={i} className={`th${i === 2 ? ' th-right' : ''}`}>{h}</th>)}
-      </tr></thead>
-      <tbody>
-        {rows.map(w => {
-          const b = getBadge(w.status);
-          return (
-            <tr key={w.id} className="tr-base">
-              <td className="td" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text2)' }}>{w.id}</td>
-              <td className="td"><div style={{ fontSize: 14, fontWeight: 600 }}>{w.driver}</div><div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text3)' }}>{w.cbu.slice(0, 14)}…</div></td>
-              <td className="td" style={{ textAlign: 'right', fontSize: 13.5, fontWeight: 600 }}>{money(w.amount)}</td>
-              <td className="td"><Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} /></td>
-              <td className="td" style={{ fontSize: 13, color: 'var(--text2)' }}>{fdate(w.createdAt)}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
+  const columns: Column[] = [
+    {
+      label: 'Retiro',
+      render: w => <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text2)' }}>{w.id}</span>,
+    },
+    {
+      label: 'Driver',
+      render: w => (<><div style={{ fontSize: 14, fontWeight: 600 }}>{w.driver}</div><div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text3)' }}>{w.cbu.slice(0, 14)}…</div></>),
+    },
+    {
+      label: 'Monto',
+      align: 'right',
+      render: w => <span style={{ fontSize: 13.5, fontWeight: 600 }}>{money(w.amount)}</span>,
+    },
+    {
+      label: 'Estado',
+      render: w => { const b = getBadge(w.status); return <Badge label={b.badgeLabel} bg={b.badgeBg} fg={b.badgeFg} />; },
+    },
+    {
+      label: 'Solicitado',
+      render: w => <span style={{ fontSize: 13, color: 'var(--text2)' }}>{fdate(w.createdAt)}</span>,
+    },
+  ];
+
+  return <Table columns={columns} rows={rows} />;
 }
 
-// Nota mostrada bajo la tabla de retiros (solo lectura).
 export function WithdrawalsFooter() {
   return (
     <div style={{ marginTop: 14, padding: '13px 16px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', fontSize: 13, color: 'var(--text2)' }}>

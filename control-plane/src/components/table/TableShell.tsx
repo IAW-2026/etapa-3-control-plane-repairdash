@@ -81,7 +81,7 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
 
       {/* Table container */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-wrap" style={{ overflowX: 'auto' }}>
           {children(rows)}
         </div>
 

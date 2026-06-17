@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
+import '@/components/table/table.css';
 
 // Self-hosted (no Google Fonts). Plus Jakarta Sans is a variable font covering
 // the 200–800 weight range; it drives both the heading and body type. The
