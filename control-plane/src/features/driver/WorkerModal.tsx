@@ -12,23 +12,28 @@ export function WorkerModal() {
   if (modal?.type !== 'worker') return null;
 
   return (
-    <ModalShell width="min(440px, 100%)">
+    <ModalShell width="min(440px, 100%)" label={`Cambiar estado de ${modal.name}`}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>Cambiar estado - {modal.name}</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div role="radiogroup" aria-label="Estado del trabajador" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {WORKER_STATUSES.map(status => {
           const meta = STATUS_META[status];
           const tone = TONES[meta.tone];
           const active = modal.status === status;
           return (
-            <div
+            <button
               key={status}
+              type="button"
+              role="radio"
+              aria-checked={active}
               onClick={() => dispatch({ type: 'SET_MODAL_WORKER_STATUS', payload: status })}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
+                width: '100%',
+                textAlign: 'left',
                 padding: '11px 14px',
                 borderRadius: 11,
                 cursor: 'pointer',
@@ -42,7 +47,7 @@ export function WorkerModal() {
             >
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: tone[1] }} />
               <span>{meta.label}</span>
-            </div>
+            </button>
           );
         })}
       </div>

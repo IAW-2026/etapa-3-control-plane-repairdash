@@ -34,7 +34,7 @@
   --border2: #382C56;
   --text: #F3EEFA;
   --text2: #AC9FC6;
-  --text3: #7B6E97;
+  --text3: #8C81A8;
   --violet: #9D6BFF;
   --violet-soft: rgba(157,107,255,.15);
   --pink: #F26BB8;
@@ -54,15 +54,17 @@
 }
 
 [data-theme="light"] {
-  --bg: #F7F4FB;
-  --surface: #FFFFFF;
-  --surface2: #F2EDF9;
-  --surface3: #EAE2F5;
-  --border: #E5DDF1;
-  --border2: #D4C7EA;
+  /* Fondo lavanda suave (no blanco puro) para reducir el cansancio visual;
+     las tarjetas (--surface) quedan un escalón más claras para resaltar. */
+  --bg: #EBE7F3;
+  --surface: #F8F6FC;
+  --surface2: #E4DEF1;
+  --surface3: #DBD2EC;
+  --border: #D7CDE9;
+  --border2: #C6B8E0;
   --text: #1B1226;
   --text2: #5C5174;
-  --text3: #8C81A4;
+  --text3: #6B6189;
   --violet: #7240E8;
   --violet-soft: rgba(114,64,232,.10);
   --pink: #D9438F;
@@ -216,3 +218,70 @@
   background: linear-gradient(90deg, transparent 0%, rgba(150,130,190,.32) 50%, transparent 100%);
   animation: skeletonShimmer 1.3s ease-in-out infinite;
 }
+
+/* ── Dashboard grid (responsive via CSS, no JS measurement → no layout flash) ── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+}
+.dashboard-commission { grid-column: span 2; }
+@media (max-width: 640px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-commission { grid-column: 1; }
+}
+
+/* ── App shell responsive (CSS-driven so the desktop/mobile split is correct on
+   the first paint — avoids the post-mount layout shift and hydration mismatch
+   that JS window-width measurement caused). Breakpoint matches the old 880px. ── */
+.app-sidebar {
+  width: 256px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface); border-right: 1px solid var(--border);
+  height: 100%;
+}
+.app-backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(10, 6, 16, .55);
+  border: none; padding: 0; cursor: pointer;
+}
+.app-hamburger {
+  display: none;
+  flex-direction: column; gap: 4px;
+  background: none; border: 1px solid var(--border);
+  border-radius: 9px; padding: 9px 8px; cursor: pointer;
+}
+@media (max-width: 880px) {
+  .app-sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 50;
+    transform: translateX(-105%);
+    transition: transform .28s ease;
+    box-shadow: var(--shadow);
+  }
+  .app-sidebar[data-open="true"] { transform: translateX(0); }
+  .app-backdrop { display: block; }
+  .app-hamburger { display: flex; }
+}
+
+/* ── Focus visibility (keyboard). Baseline ring for every interactive element;
+   form controls that already have a themed focus style keep border + glow. The
+   :where() wrapper keeps specificity at 0 so class rules below still win. ── */
+:where(a, button, input, select, textarea):focus { outline: none; }
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+.input-base:focus-visible,
+.input-sm:focus-visible,
+.select-base:focus-visible {
+  outline: none;
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px var(--violet-soft);
+}
+
+/* Readable placeholders (default browser placeholder fails contrast) */
+::placeholder { color: var(--text3); opacity: 1; }

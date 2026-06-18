@@ -14,6 +14,9 @@ export function CommissionForm() {
     >
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <input
+          className="input-base"
+          inputMode="decimal"
+          aria-label="Nueva comisión en porcentaje"
           placeholder="10.00"
           value={commissionInput}
           onChange={e => dispatch({ type: 'SET_COMMISSION_INPUT', payload: e.target.value })}
@@ -21,17 +24,10 @@ export function CommissionForm() {
             flex: 1,
             minWidth: 140,
             maxWidth: 200,
-            padding: '10px 13px',
-            borderRadius: 10,
-            border: '1px solid var(--border)',
-            background: 'var(--bg)',
-            color: 'var(--text)',
+            width: 'auto',
             fontSize: 15,
-            outline: 'none',
             fontFamily: 'var(--font-mono)',
           }}
-          onFocus={e => { e.target.style.borderColor = 'var(--violet)'; e.target.style.boxShadow = '0 0 0 3px var(--violet-soft)'; }}
-          onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
         />
         <button className="btn-primary" onClick={saveCommission} disabled={state.saving}>
           {state.saving ? <Spinner /> : 'Guardar cambios'}

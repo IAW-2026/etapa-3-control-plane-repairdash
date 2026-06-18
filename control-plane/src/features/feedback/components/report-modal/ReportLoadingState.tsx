@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 export function ReportLoadingState({ id, loading, onClose }: { id: string; loading: boolean; onClose: () => void }) {
   return (
-    <ModalShell width="min(560px, 100%)" top style={{ gap: 16 }}>
+    <ModalShell width="min(560px, 100%)" top label={`Reporte ${id}`} style={{ gap: 16 }}>
       <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>Reporte {id}</span>
       {loading ? (
         <>

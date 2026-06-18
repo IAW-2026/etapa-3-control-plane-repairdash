@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { StoreProvider, useStore } from '@/lib/store';
 import { Sidebar } from './layout/Sidebar';
 import { Header } from './layout/Header';
@@ -17,17 +17,6 @@ import { Toast } from './ui/Toast';
 function Chrome({ children }: { children: ReactNode }) {
   const { state, dispatch } = useStore();
   const { theme, sidebarOpen } = state;
-  const [winW, setWinW] = useState(() => (
-    typeof window === 'undefined' ? 1280 : window.innerWidth
-  ));
-
-  useEffect(() => {
-    const onR = () => setWinW(window.innerWidth);
-    window.addEventListener('resize', onR);
-    return () => window.removeEventListener('resize', onR);
-  }, []);
-
-  const isMobile = winW < 880;
 
   return (
     <div
@@ -40,18 +29,20 @@ function Chrome({ children }: { children: ReactNode }) {
         overflow: 'hidden',
       }}
     >
-      {/* Mobile sidebar backdrop */}
-      {isMobile && sidebarOpen && (
-        <div
+      {/* Mobile sidebar backdrop (shown only under the CSS breakpoint) */}
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          className="app-backdrop"
           onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(10,6,16,.55)', zIndex: 40 }}
         />
       )}
 
-      <Sidebar isMobile={isMobile} />
+      <Sidebar />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%' }}>
-        <Header isMobile={isMobile} />
+        <Header />
 
         <main style={{ flex: 1, overflowY: 'auto', padding: 'clamp(16px, 3vw, 30px)' }}>
           {children}

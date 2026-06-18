@@ -55,18 +55,18 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
             placeholder={meta.search || 'Buscar...'}
             initialValue={filters.q}
             onApply={value => updateParam('q', value)}
-            style={{ flex: 1, minWidth: 0, padding: '9px 13px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13.5, outline: 'none' }}
+            style={{ flex: 1, minWidth: 0, padding: '9px 13px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13.5 }}
           />
         </div>
         {meta.statuses && (
-          <select value={filters.status} onChange={e => updateParam('status', e.target.value)} className="select-base">
+          <select aria-label="Filtrar por estado" value={filters.status} onChange={e => updateParam('status', e.target.value)} className="select-base">
             {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         )}
         {meta.dates && (
           <>
-            <input type="date" value={filters.dateFrom} onChange={e => updateParam('from', e.target.value)} className="input-sm" />
-            <input type="date" value={filters.dateTo} onChange={e => updateParam('to', e.target.value)} className="input-sm" />
+            <input type="date" aria-label="Fecha desde" value={filters.dateFrom} onChange={e => updateParam('from', e.target.value)} className="input-sm" />
+            <input type="date" aria-label="Fecha hasta" value={filters.dateTo} onChange={e => updateParam('to', e.target.value)} className="input-sm" />
           </>
         )}
         <button

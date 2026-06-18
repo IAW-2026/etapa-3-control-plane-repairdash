@@ -29,7 +29,7 @@ export function PromoModal() {
   };
 
   return (
-    <ModalShell width="min(540px, 100%)" top>
+    <ModalShell width="min(540px, 100%)" top label={isEdit ? 'Editar promocion' : 'Nueva promocion'}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>
           {isEdit ? 'Editar promocion' : 'Nueva promocion'}
@@ -72,7 +72,7 @@ export function PromoModal() {
       {formError && <span style={{ fontSize: 12.5, color: 'var(--danger)' }}>{formError}</span>}
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
         <button className="btn-ghost" onClick={closeModal} disabled={state.saving}>Cancelar</button>
-        <button className="btn-primary" onClick={savePromo} disabled={state.saving}>{state.saving ? <Spinner /> : 'Guardar'}</button>
+        <button className="btn-primary" onClick={savePromo} disabled={state.saving} aria-busy={state.saving}>{state.saving ? <Spinner /> : 'Guardar'}</button>
       </div>
     </ModalShell>
   );

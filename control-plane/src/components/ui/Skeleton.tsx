@@ -25,7 +25,7 @@ export function TableSkeleton({ rows = 8, cols = 5 }: { rows?: number; cols?: nu
   // Repeating width pattern so columns look distinct instead of uniform bars.
   const widths = ['70%', '52%', '40%', '60%', '34%', '48%', '44%'];
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse' }} aria-hidden>
+    <table style={{ width: '100%', borderCollapse: 'collapse' }} aria-hidden={true}>
       <tbody>
         {Array.from({ length: rows }).map((_, r) => (
           <tr key={r} className="tr-base">

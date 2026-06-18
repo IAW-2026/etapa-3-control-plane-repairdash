@@ -34,7 +34,7 @@ export function ReportModal() {
   const resolved = rep.estado === 'RESUELTO';
 
   return (
-    <ModalShell width="min(560px, 100%)" top style={{ gap: 16 }}>
+    <ModalShell width="min(560px, 100%)" top label={`Reporte ${rep.id}`} style={{ gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>Reporte {rep.id}</span>
@@ -74,7 +74,7 @@ export function ReportModal() {
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
         <button className="btn-ghost" onClick={closeModal} disabled={state.saving}>Cerrar</button>
         {resolvable && (
-          <button className="btn-primary" onClick={saveResolve} disabled={!modal.decision || state.saving}>
+          <button className="btn-primary" onClick={saveResolve} disabled={!modal.decision || state.saving} aria-busy={state.saving}>
             {state.saving ? <Spinner /> : 'Confirmar resolucion'}
           </button>
         )}

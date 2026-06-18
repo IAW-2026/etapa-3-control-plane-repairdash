@@ -14,7 +14,7 @@ export function ServiceModal() {
     dispatch({ type: 'SET_FORM_FIELD', payload: { key: key as 'nombre', value: e.target.value } });
 
   return (
-    <ModalShell width="min(460px, 100%)">
+    <ModalShell width="min(460px, 100%)" label={isEdit ? 'Editar tipo de servicio' : 'Nuevo tipo de servicio'}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <span style={{ fontFamily: 'var(--font-grotesk)', fontSize: 17, fontWeight: 700 }}>
           {isEdit ? 'Editar tipo de servicio' : 'Nuevo tipo de servicio'}
@@ -32,7 +32,7 @@ export function ServiceModal() {
       {formError && <span style={{ fontSize: 12.5, color: 'var(--danger)' }}>{formError}</span>}
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
         <button className="btn-ghost" onClick={closeModal} disabled={state.saving}>Cancelar</button>
-        <button className="btn-primary" onClick={saveService} disabled={state.saving}>{state.saving ? <Spinner /> : 'Guardar'}</button>
+        <button className="btn-primary" onClick={saveService} disabled={state.saving} aria-busy={state.saving}>{state.saving ? <Spinner /> : 'Guardar'}</button>
       </div>
     </ModalShell>
   );

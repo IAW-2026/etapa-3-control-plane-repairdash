@@ -144,7 +144,8 @@ export interface Promotion {
   destacada: boolean;
   usoUnico: boolean;
   precioMinimo: number | null;
-  categorias: string[];
+  categorias: string[];            // IDs de tipos de servicio (los usa el form de edición)
+  categoriasNombres?: string[];    // nombres resueltos server-side, solo para mostrar
   eliminada: boolean;
   fechaInicio: string;
   fechaFin: string | null;

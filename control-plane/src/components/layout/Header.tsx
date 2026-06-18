@@ -20,7 +20,7 @@ const ROUTE_META: Record<string, { group: string; title: string }> = {
   feedback:     { group: 'Feedback',   title: 'Feedback y disputas' },
 };
 
-export function Header({ isMobile }: { isMobile: boolean }) {
+export function Header() {
   const { state, dispatch, setTheme } = useStore();
   const { theme } = state;
   const route = routeFromPath(usePathname());
@@ -34,20 +34,16 @@ export function Header({ isMobile }: { isMobile: boolean }) {
       borderBottom: '1px solid var(--border)',
       background: 'var(--surface)',
     }}>
-      {isMobile && (
-        <button
-          onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
-          style={{
-            display: 'flex', flexDirection: 'column', gap: 4,
-            background: 'none', border: '1px solid var(--border)',
-            borderRadius: 9, padding: '9px 8px', cursor: 'pointer',
-          }}
-        >
-          {[0,1,2].map(i => (
-            <span key={i} style={{ width: 16, height: 2, borderRadius: 2, background: 'var(--text2)', display: 'block' }} />
-          ))}
-        </button>
-      )}
+      <button
+        type="button"
+        className="app-hamburger"
+        aria-label="Abrir o cerrar el menú"
+        onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
+      >
+        {[0,1,2].map(i => (
+          <span key={i} style={{ width: 16, height: 2, borderRadius: 2, background: 'var(--text2)', display: 'block' }} />
+        ))}
+      </button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         <span style={{ fontSize: 13, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{meta.group}</span>

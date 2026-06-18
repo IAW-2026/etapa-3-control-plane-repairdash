@@ -62,3 +62,15 @@ export async function fetchRouteList<T = Record<string, unknown>>(
 export async function fetchSummaryData(): Promise<SummaryData | null> {
   return internalJson<SummaryData>('/api/cp/summary');
 }
+
+// Mapa id→nombre de tipos de servicio, resuelto en el servidor para que la tabla
+// de promociones muestre los nombres de categoría desde el primer render (sin el
+// parpadeo de IDs que causaba resolverlos en el cliente con useServiceTypes).
+export async function fetchServiceTypeNames(): Promise<Record<string, string>> {
+  const json = await internalJson<{ items: { id: string; nombre: string }[] }>(
+    '/api/cp/services?page=1&limit=100',
+  );
+  const map: Record<string, string> = {};
+  for (const s of json?.items ?? []) map[s.id] = s.nombre;
+  return map;
+}

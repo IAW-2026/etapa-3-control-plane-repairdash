@@ -54,7 +54,7 @@ const NAV: NavEntry[] = [
   { kind: 'link', id: 'feedback', label: 'Feedback', dot: 'var(--pink)' },
 ];
 
-export function Sidebar({ isMobile }: { isMobile: boolean }) {
+export function Sidebar() {
   const { state, dispatch } = useStore();
   const { sidebarOpen } = state;
   const pathname = usePathname();
@@ -88,19 +88,8 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
     ...(indent ? { paddingLeft: 30 } : {}),
   });
 
-  const sidebarStyle: React.CSSProperties = {
-    width: 256, flexShrink: 0, display: 'flex', flexDirection: 'column',
-    background: 'var(--surface)', borderRight: '1px solid var(--border)', height: '100%',
-    ...(isMobile ? {
-      position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 50,
-      transform: `translateX(${sidebarOpen ? '0' : '-105%'})`,
-      transition: 'transform .28s ease',
-      boxShadow: 'var(--shadow)',
-    } : {}),
-  };
-
   return (
-    <aside style={sidebarStyle}>
+    <aside className="app-sidebar" data-open={sidebarOpen}>
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '20px 18px 16px' }}>
         <div style={{
@@ -141,6 +130,8 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
               <button
                 type="button"
                 onClick={() => toggle(entry.key)}
+                aria-expanded={isOpen}
+                aria-label={`${isOpen ? 'Contraer' : 'Expandir'} ${entry.label}`}
                 style={{
                   ...linkStyle(hasActiveChild && !isOpen),
                   width: 'auto', border: 'none', textAlign: 'left', fontFamily: 'inherit',
@@ -178,7 +169,7 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
       </nav>
 
       {/* Footer */}
-      <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <footer style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {[['RepairDash', 'var(--pink)'], ['DriverApp', 'var(--violet)'], ['Payments', 'var(--mag)']].map(([name, color]) => (
             <span key={name} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--text3)' }}>
@@ -194,7 +185,7 @@ export function Sidebar({ isMobile }: { isMobile: boolean }) {
             <span style={{ fontSize: 11.5, color: 'var(--text3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.primaryEmailAddress?.emailAddress || ''}</span>
           </div>
         </div>
-      </div>
+      </footer>
     </aside>
   );
 }

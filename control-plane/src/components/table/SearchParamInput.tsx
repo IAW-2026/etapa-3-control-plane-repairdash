@@ -22,6 +22,8 @@ export function SearchParamInput({
   return (
     <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 6 }}>
       <input
+        type="search"
+        aria-label={placeholder}
         placeholder={placeholder}
         value={draft}
         onChange={e => setDraft(e.target.value)}

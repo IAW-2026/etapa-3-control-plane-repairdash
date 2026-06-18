@@ -4,14 +4,15 @@ import { money, fdate, getBadge, promoEstado, promoValor } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Table, type Column } from '@/components/table/Table';
 import type { Promotion } from '@/lib/types';
-import { useServiceTypes } from './useServiceTypes';
 
 export function PromotionsTable({ rows }: { rows: Promotion[] }) {
   const { dispatch, deletePromo } = useStore();
-  const { services } = useServiceTypes();
-  const serviceNameById = new Map(services.map(s => [s.id, s.nombre]));
-  const formatCategorias = (categorias: string[]) =>
-    categorias.length ? categorias.map(c => serviceNameById.get(c) || c).join(', ') : 'Todas';
+  // Los nombres de categoría vienen ya resueltos del servidor (categoriasNombres);
+  // se usa categorias (IDs) como fallback por si faltara el campo.
+  const formatCategorias = (p: Promotion) => {
+    const names = p.categoriasNombres ?? p.categorias;
+    return names.length ? names.join(', ') : 'Todas';
+  };
 
   const columns: Column[] = [
     {
@@ -37,7 +38,7 @@ export function PromotionsTable({ rows }: { rows: Promotion[] }) {
     },
     {
       label: 'Categorías',
-      render: p => <span style={{ fontSize: 12.5, color: 'var(--text2)' }}>{formatCategorias(p.categorias)}</span>,
+      render: p => <span style={{ fontSize: 12.5, color: 'var(--text2)' }}>{formatCategorias(p)}</span>,
     },
     {
       label: 'Vigencia',

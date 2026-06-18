@@ -19,6 +19,8 @@ export function PromotionFlags({
         return (
           <button
             key={key}
+            type="button"
+            aria-pressed={active}
             onClick={() => onToggle(key)}
             style={{
               display: 'flex',

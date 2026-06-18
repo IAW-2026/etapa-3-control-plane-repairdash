@@ -21,15 +21,15 @@ export function FeedbackFilters({
         initialValue={filters.q}
         onApply={value => onUpdate('q', value)}
         className="select-base"
-        style={{ flex: 1, minWidth: 190, maxWidth: 340, padding: '9px 13px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13.5, outline: 'none', borderRadius: 10 }}
+        style={{ flex: 1, minWidth: 190, maxWidth: 340, padding: '9px 13px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13.5, borderRadius: 10 }}
       />
-      <select value={filters.status} onChange={e => onUpdate('status', e.target.value)} className="select-base">
+      <select aria-label="Filtrar por estado del reporte" value={filters.status} onChange={e => onUpdate('status', e.target.value)} className="select-base">
         <option value="ALL">Todos los estados</option>
         <option value="CREADO">Creado</option>
         <option value="PRUEBAS_AGREGADAS">En revision</option>
         <option value="RESUELTO">Resuelto</option>
       </select>
-      <select value={filters.resFilter} onChange={e => onUpdate('resFilter', e.target.value)} className="select-base">
+      <select aria-label="Filtrar por resolución" value={filters.resFilter} onChange={e => onUpdate('resFilter', e.target.value)} className="select-base">
         <option value="ALL">Toda resolucion</option>
         <option value="SinResolver">Sin resolver</option>
         <option value="Resuelto">Resuelto</option>

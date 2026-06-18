@@ -4,6 +4,9 @@ export function SegmentedDiscountType({ value, onChange }: { value: '%' | '$'; o
       {([['%', 'Porcentaje'], ['$', 'Monto fijo']] as const).map(([val, label]) => (
         <button
           key={val}
+          type="button"
+          aria-pressed={value === val}
+          aria-label={label}
           onClick={() => onChange(val)}
           style={{
             flex: 1,

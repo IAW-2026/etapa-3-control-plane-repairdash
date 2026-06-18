@@ -24,7 +24,14 @@ export function DashboardAppCard({ card, loading }: { card: AppCard; loading: bo
       </div>
       <div style={{ display: 'flex', gap: 16, borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 'auto' }}>
         {card.links.map(link => (
-          <span key={link.label} onClick={link.go} style={{ fontSize: 13, fontWeight: 600, color: link.color, cursor: 'pointer' }}>{link.label}</span>
+          <button
+            key={link.label}
+            type="button"
+            onClick={link.go}
+            style={{ border: 'none', background: 'none', padding: 0, fontSize: 13, fontWeight: 600, color: link.color, cursor: 'pointer' }}
+          >
+            {link.label}
+          </button>
         ))}
       </div>
     </SectionCard>
