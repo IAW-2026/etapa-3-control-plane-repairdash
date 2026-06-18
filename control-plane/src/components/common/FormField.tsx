@@ -12,11 +12,11 @@ export function FormField({
   error?: ReactNode;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[12.5px] font-semibold text-[var(--text2)]">{label}</label>
       {children}
-      {help && <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>{help}</span>}
-      {error && <span style={{ fontSize: 12.5, color: 'var(--danger)' }}>{error}</span>}
+      {help && <span className="text-[12.5px] text-[var(--text3)]">{help}</span>}
+      {error && <span className="text-[12.5px] text-[var(--danger)]">{error}</span>}
     </div>
   );
 }
