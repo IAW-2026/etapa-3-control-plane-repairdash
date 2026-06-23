@@ -112,7 +112,7 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
           className="btn-ghost table-clear-filter"
           style={{ minWidth: 120 }}
           onClick={() => router.replace(pathname)}
-          disabled={!(filters.q || (filters.status && filters.status !== 'ALL') || (filters.resFilter && filters.resFilter !== 'ALL') || filters.dateFrom || filters.dateTo)}
+          disabled={!(filters.q || (filters.status && filters.status !== 'ALL') || filters.dateFrom || filters.dateTo)}
         >
           Limpiar filtros
         </button>

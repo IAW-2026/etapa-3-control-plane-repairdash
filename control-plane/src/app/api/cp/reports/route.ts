@@ -38,10 +38,8 @@ export async function GET(req: NextRequest) {
     const sp = new URLSearchParams();
     const q      = req.nextUrl.searchParams.get('q')        || '';
     const estado = req.nextUrl.searchParams.get('status')   || '';
-    const resol  = req.nextUrl.searchParams.get('resFilter')|| '';
     const page   = req.nextUrl.searchParams.get('page')     || '1';
     if (estado && estado !== 'ALL')  sp.set('estado',    estado);
-    if (resol  && resol  !== 'ALL')  sp.set('resolucion', resol);
     sp.set('page',  page);
     sp.set('limit', '20');
 
