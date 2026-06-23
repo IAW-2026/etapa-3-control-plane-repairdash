@@ -1,5 +1,3 @@
-export type Theme = 'dark' | 'light';
-
 export type Route =
   | 'dashboard' | 'clientes' | 'workers' | 'pdrivers' | 'priders'
   | 'jobs' | 'viajes' | 'services' | 'transactions' | 'withdrawals'

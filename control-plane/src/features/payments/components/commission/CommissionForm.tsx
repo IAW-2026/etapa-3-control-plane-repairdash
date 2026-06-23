@@ -10,7 +10,7 @@ export function CommissionForm() {
     <FormField
       label="Nueva comision (%)"
       error={commissionError}
-      help="String decimal entre 0 y 100, hasta 2 decimales. Se envia con actor y motivo para trazabilidad."
+      help="Ingresa un porcentaje entre 0 y 100, con hasta 2 decimales."
     >
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <input

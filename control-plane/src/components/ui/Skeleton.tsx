@@ -2,7 +2,7 @@
 import type { CSSProperties } from 'react';
 
 // Shimmer placeholders used while data is loading. The shimmer itself lives in
-// the `.skeleton` class (globals.css) so it follows the active theme tokens.
+// the `.skeleton` class (globals.css) so it follows the active design tokens.
 
 interface SkeletonProps {
   w?: number | string;

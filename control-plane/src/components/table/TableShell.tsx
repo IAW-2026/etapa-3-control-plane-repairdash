@@ -1,5 +1,5 @@
 'use client';
-import { ReactNode } from 'react';
+import { KeyboardEvent, ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { STATUS_META } from '@/lib/utils';
 import type { Route } from '@/lib/types';
@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { SectionCard } from '@/components/common/SectionCard';
 import { Pagination } from './Pagination';
 import type { TableMeta } from './meta';
-import { paramsHref, setListFilterParam, type ListFilters } from '@/lib/search-params';
+import { LIST_FILTER_MIN_DATE, paramsHref, setListFilterParam, type ListFilters } from '@/lib/search-params';
 import { SearchParamInput } from './SearchParamInput';
 
 type AnyItem = Record<string, unknown>;
@@ -36,6 +36,18 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
     const next = setListFilterParam(new URLSearchParams(searchParams.toString()), key, value);
     router.replace(paramsHref(pathname, next));
   };
+  const openDatePicker = (input: HTMLInputElement) => {
+    try {
+      input.showPicker?.();
+    } catch {
+      // Some browsers only allow showPicker during trusted pointer/focus events.
+    }
+  };
+  const handleDateKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' || e.key === 'Escape') return;
+    e.preventDefault();
+    if (e.key === 'Enter' || e.key === ' ') openDatePicker(e.currentTarget);
+  };
   const statusOptions = [{ value: 'ALL', label: 'Todos los estados' }, ...(meta.statuses || []).map(st => ({ value: st, label: (STATUS_META[st] || { label: st }).label }))];
 
   return (
@@ -48,8 +60,8 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
       />
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '18px 0 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 190, maxWidth: 340, gap: 6 }}>
+      <div className="table-filters" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '18px 0 14px' }}>
+        <div className="table-search-filter" style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 190, maxWidth: 340, gap: 6 }}>
           <SearchParamInput
             key={`${pathname}:${filters.q}`}
             placeholder={meta.search || 'Buscar...'}
@@ -64,21 +76,47 @@ export function TableShell({ route: _route, meta, filters, rows, total, totalPag
           </select>
         )}
         {meta.dates && (
-          <>
-            <input type="date" aria-label="Fecha desde" value={filters.dateFrom} onChange={e => updateParam('from', e.target.value)} className="input-sm" />
-            <input type="date" aria-label="Fecha hasta" value={filters.dateTo} onChange={e => updateParam('to', e.target.value)} className="input-sm" />
-          </>
+          <div className="table-date-filters">
+            <label className="table-date-field">
+              <span className="table-date-label">Desde</span>
+              <input
+                type="date"
+                aria-label="Fecha desde"
+                min={LIST_FILTER_MIN_DATE}
+                value={filters.dateFrom}
+                onChange={e => updateParam('from', e.target.value)}
+                onFocus={e => openDatePicker(e.currentTarget)}
+                onClick={e => openDatePicker(e.currentTarget)}
+                onKeyDown={handleDateKeyDown}
+                className="input-sm table-date-input"
+              />
+            </label>
+            <label className="table-date-field">
+              <span className="table-date-label">Hasta</span>
+              <input
+                type="date"
+                aria-label="Fecha hasta"
+                min={LIST_FILTER_MIN_DATE}
+                value={filters.dateTo}
+                onChange={e => updateParam('to', e.target.value)}
+                onFocus={e => openDatePicker(e.currentTarget)}
+                onClick={e => openDatePicker(e.currentTarget)}
+                onKeyDown={handleDateKeyDown}
+                className="input-sm table-date-input"
+              />
+            </label>
+          </div>
         )}
         <button
           type="button"
-          className="btn-ghost"
+          className="btn-ghost table-clear-filter"
           style={{ minWidth: 120 }}
           onClick={() => router.replace(pathname)}
           disabled={!(filters.q || (filters.status && filters.status !== 'ALL') || (filters.resFilter && filters.resFilter !== 'ALL') || filters.dateFrom || filters.dateTo)}
         >
           Limpiar filtros
         </button>
-        <span style={{ fontSize: 12.5, color: 'var(--text3)' }}>{total} {total === 1 ? 'resultado' : 'resultados'}</span>
+        <span className="table-results-count" style={{ fontSize: 12.5, color: 'var(--text3)' }}>{total} {total === 1 ? 'resultado' : 'resultados'}</span>
       </div>
 
       {/* Table container */}

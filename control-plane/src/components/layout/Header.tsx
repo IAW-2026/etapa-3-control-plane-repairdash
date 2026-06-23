@@ -21,8 +21,7 @@ const ROUTE_META: Record<string, { group: string; title: string }> = {
 };
 
 export function Header() {
-  const { state, dispatch, setTheme } = useStore();
-  const { theme } = state;
+  const { dispatch } = useStore();
   const route = routeFromPath(usePathname());
   const meta = ROUTE_META[route] || ROUTE_META.dashboard;
 
@@ -49,26 +48,6 @@ export function Header() {
         <span style={{ fontSize: 13, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{meta.group}</span>
         <span style={{ fontSize: 13, color: 'var(--text3)' }}>/</span>
         <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{meta.title}</span>
-      </div>
-
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ display: 'flex', padding: 3, borderRadius: 999, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-          {(['light', 'dark'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setTheme(t)}
-              style={{
-                border: 'none', borderRadius: 999, padding: '5px 13px', fontSize: 12, fontWeight: 600,
-                cursor: 'pointer',
-                background: theme === t ? (t === 'light' ? 'var(--surface)' : 'var(--surface3)') : 'transparent',
-                color: theme === t ? 'var(--text)' : 'var(--text3)',
-                boxShadow: theme === t && t === 'light' ? '0 1px 4px rgba(20,10,40,.18)' : 'none',
-              }}
-            >
-              {t === 'light' ? 'Claro' : 'Oscuro'}
-            </button>
-          ))}
-        </div>
       </div>
     </header>
   );
