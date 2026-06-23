@@ -170,14 +170,6 @@ export function Sidebar() {
 
       {/* Footer */}
       <footer style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          {[['RepairDash', 'var(--pink)'], ['DriverApp', 'var(--violet)'], ['Payments', 'var(--mag)']].map(([name, color]) => (
-            <span key={name} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--text3)' }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-              {name}
-            </span>
-          ))}
-        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <UserButton />
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
