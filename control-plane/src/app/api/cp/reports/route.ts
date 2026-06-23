@@ -13,8 +13,18 @@ function normalizeList(r: Record<string, unknown>): Report {
     decision:     (r.decision    as Report['decision'])  ?? null,
     descripcion:  (r.descripcion as string) || '',
     creadoEn:     (r.creadoEn   as string) || '',
-    reportante:   { id: '', nombre: '—', apellido: '', rol: 'rider' },
-    reportado:    { id: '', nombre: '—', apellido: '', rol: 'driver' },
+    reportante: {
+      id:       (r.reportante as Record<string, unknown> | undefined)?.id       as string  || '',
+      nombre:   (r.reportante as Record<string, unknown> | undefined)?.nombre   as string  || '—',
+      apellido: (r.reportante as Record<string, unknown> | undefined)?.apellido as string  || '',
+      rol:      (r.reportante as Record<string, unknown> | undefined)?.rol      as string  || 'rider',
+    } as Report['reportante'],
+    reportado: {
+      id:       (r.reportado as Record<string, unknown> | undefined)?.id       as string  || '',
+      nombre:   (r.reportado as Record<string, unknown> | undefined)?.nombre   as string  || '—',
+      apellido: (r.reportado as Record<string, unknown> | undefined)?.apellido as string  || '',
+      rol:      (r.reportado as Record<string, unknown> | undefined)?.rol      as string  || 'driver',
+    } as Report['reportado'],
     trabajo:      { id: '', tipoDeTrabajo: '—', fechaInicio: '', fechaFin: null },
     pruebas:      [],
   };
