@@ -6,7 +6,6 @@ import { SectionCard } from '@/components/common/SectionCard';
 import { useStore } from '@/lib/store';
 import { CommissionForm } from './CommissionForm';
 import { CurrentCommissionCard } from './CurrentCommissionCard';
-import { ScopeNote } from './ScopeNote';
 
 export function CommissionView() {
   const { state, fetchCommission } = useStore();
@@ -25,8 +24,6 @@ export function CommissionView() {
         <div style={{ height: 1, background: 'var(--border)' }} />
         <CommissionForm />
       </SectionCard>
-
-      <ScopeNote />
     </div>
   );
 }

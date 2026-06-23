@@ -2,10 +2,9 @@
 import { createContext, useCallback, useContext, useEffect, useReducer, useRef, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { emptyData } from './data';
-import type { AppData, Commission, FormState, ModalType, Report, Route, ServiceType, SummaryData, Theme, Toast } from './types';
+import type { AppData, Commission, FormState, ModalType, Report, Route, ServiceType, SummaryData, Toast } from './types';
 
 interface State {
-  theme: Theme;
   route: Route;
   sidebarOpen: boolean;
   modal: ModalType | null;
@@ -23,7 +22,6 @@ interface State {
 }
 
 type Action =
-  | { type: 'SET_THEME'; payload: Theme }
   | { type: 'SET_ROUTE'; payload: Route }
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'CLOSE_SIDEBAR' }
@@ -46,7 +44,6 @@ type Action =
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'SET_THEME': return { ...state, theme: action.payload };
     case 'SET_ROUTE': return { ...state, route: action.payload, sidebarOpen: false };
     case 'TOGGLE_SIDEBAR': return { ...state, sidebarOpen: !state.sidebarOpen };
     case 'CLOSE_SIDEBAR': return { ...state, sidebarOpen: false };
@@ -75,12 +72,10 @@ function reducer(state: State, action: Action): State {
 }
 
 function getInitialState(): State {
-  // Always start from the same defaults on server and client to avoid hydration
-  // mismatches. Persisted theme/route are applied in an effect after mount.
-  const theme: Theme = 'dark';
+  // Always start from the same defaults on server and client to avoid hydration mismatches.
   const route: Route = 'dashboard';
   return {
-    theme, route,
+    route,
     sidebarOpen: false, modal: null, form: {}, formError: '',
     commissionInput: '', commissionError: '', toast: null,
     data: emptyData(),
@@ -100,7 +95,6 @@ const WORKER_STATUS_LABEL: Record<'ONLINE' | 'OFFLINE' | 'EN_TRABAJO', string> =
 interface StoreCtx {
   state: State;
   dispatch: React.Dispatch<Action>;
-  setTheme: (t: Theme) => void;
   showToast: (msg: string, kind?: 'success' | 'error') => void;
   closeModal: () => void;
   fetchSummary: () => Promise<void>;
@@ -123,11 +117,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, undefined, getInitialState);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const setTheme = useCallback((t: Theme) => {
-    dispatch({ type: 'SET_THEME', payload: t });
-    try { localStorage.setItem('cp-theme', t); } catch { /* */ }
-  }, []);
 
   const showToast = useCallback((msg: string, kind: 'success' | 'error' = 'success') => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -518,20 +507,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     refreshCurrentRoute();
   }, [state.data.promotions, showToast, refreshCurrentRoute]);
 
-  // Apply persisted theme once, after hydration. The active section is now
-  // driven by the URL (Next.js routing), not by localStorage.
-  useEffect(() => {
-    try {
-      const t = localStorage.getItem('cp-theme');
-      if (t === 'light') dispatch({ type: 'SET_THEME', payload: 'light' });
-    } catch { /* */ }
-  }, []);
-
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   return (
     <Ctx.Provider value={{
-      state, dispatch, setTheme, showToast, closeModal,
+      state, dispatch, showToast, closeModal,
       fetchSummary, fetchCommission, fetchReportDetail,
       saveCliente, saveWorker, saveService, saveCommission, savePromo, saveResolve,
       deleteCliente, deleteService, deletePromo,

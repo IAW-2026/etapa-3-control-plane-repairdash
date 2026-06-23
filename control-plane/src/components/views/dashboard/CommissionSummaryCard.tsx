@@ -23,7 +23,6 @@ export function CommissionSummaryCard({
         )}
         {!loading && updatedAt && <span style={{ fontSize: 12, color: 'var(--text3)' }}>act. {fdate(updatedAt)}</span>}
       </div>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--text2)' }}>Unica mutacion habilitada por Payments en v1. Se aplica a las transacciones liquidadas.</p>
       <button onClick={onEdit} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: 4 }}>
         Ajustar comision
       </button>

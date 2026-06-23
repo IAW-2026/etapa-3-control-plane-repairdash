@@ -16,12 +16,11 @@ import { Toast } from './ui/Toast';
 // The actual section content is rendered through `children` by each page.
 function Chrome({ children }: { children: ReactNode }) {
   const { state, dispatch } = useStore();
-  const { theme, sidebarOpen } = state;
+  const { sidebarOpen } = state;
 
   return (
     <div
       id="cp"
-      data-theme={theme}
       style={{
         display: 'flex', width: '100%', height: '100dvh',
         background: 'var(--bg)', color: 'var(--text)',

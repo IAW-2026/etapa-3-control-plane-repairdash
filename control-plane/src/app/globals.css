@@ -53,35 +53,6 @@
   color-scheme: dark;
 }
 
-[data-theme="light"] {
-  /* Fondo lavanda suave (no blanco puro) para reducir el cansancio visual;
-     las tarjetas (--surface) quedan un escalón más claras para resaltar. */
-  --bg: #EBE7F3;
-  --surface: #F8F6FC;
-  --surface2: #E4DEF1;
-  --surface3: #DBD2EC;
-  --border: #D7CDE9;
-  --border2: #C6B8E0;
-  --text: #1B1226;
-  --text2: #5C5174;
-  --text3: #6B6189;
-  --violet: #7240E8;
-  --violet-soft: rgba(114,64,232,.10);
-  --pink: #D9438F;
-  --pink-soft: rgba(217,67,143,.10);
-  --mag: #A93BBE;
-  --mag-soft: rgba(169,59,190,.10);
-  --ok: #1F9D63;
-  --ok-soft: rgba(31,157,99,.10);
-  --warn: #A56F12;
-  --warn-soft: rgba(176,120,24,.12);
-  --danger: #D2424E;
-  --danger-soft: rgba(210,66,78,.10);
-  --mut: #7C7194;
-  --mut-soft: rgba(124,113,148,.12);
-  --shadow: 0 18px 44px rgba(60,40,100,.14);
-  color-scheme: light;
-}
 
 /* ── Reusable classes ── */
 .btn-primary {
@@ -193,7 +164,7 @@
 }
 
 /* ── Skeleton / loading placeholders ── */
-/* Two layered cues so the "loading" motion is unmistakable in both themes:
+/* Two layered cues so the loading motion is unmistakable:
    1) the piece pulses its opacity, and
    2) a highlight band sweeps across via a transform-animated pseudo-element. */
 @keyframes skeletonPulse {
@@ -268,7 +239,7 @@
 }
 
 /* ── Focus visibility (keyboard). Baseline ring for every interactive element;
-   form controls that already have a themed focus style keep border + glow. The
+   form controls that already have a custom focus style keep border + glow. The
    :where() wrapper keeps specificity at 0 so class rules below still win. ── */
 :where(a, button, input, select, textarea):focus { outline: none; }
 :where(a, button, input, select, textarea):focus-visible {

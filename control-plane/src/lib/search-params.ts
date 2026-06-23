@@ -1,5 +1,7 @@
 export type SearchParamInput = Record<string, string | string[] | undefined>;
 
+export const LIST_FILTER_MIN_DATE = '2020-01-01';
+
 export interface ListFilters {
   q: string;
   status: string;
@@ -27,13 +29,19 @@ function parsePage(value: string): number {
   return Number.isFinite(page) && page > 0 ? page : 1;
 }
 
+function parseDateFilter(value: string): string {
+  const normalized = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return '';
+  return normalized >= LIST_FILTER_MIN_DATE ? normalized : '';
+}
+
 export function parseListFilters(searchParams: SearchParamInput = {}): ListFilters {
   return {
     q: first(searchParams.q).trim(),
     status: first(searchParams.status) || 'ALL',
     resFilter: first(searchParams.resFilter) || 'ALL',
-    dateFrom: first(searchParams.from),
-    dateTo: first(searchParams.to),
+    dateFrom: parseDateFilter(first(searchParams.from)),
+    dateTo: parseDateFilter(first(searchParams.to)),
     page: parsePage(first(searchParams.page)),
   };
 }
@@ -56,7 +64,8 @@ export function setListFilterParam(
   resetPage = true,
 ): URLSearchParams {
   const next = new URLSearchParams(current);
-  const normalized = String(value).trim();
+  const raw = String(value).trim();
+  const normalized = (key === 'from' || key === 'to') ? parseDateFilter(raw) : raw;
 
   if (!normalized || normalized === 'ALL' || (key === 'page' && normalized === '1')) {
     next.delete(key);
