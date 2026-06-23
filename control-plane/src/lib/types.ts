@@ -115,6 +115,7 @@ export interface ReportTrabajo {
 export interface Prueba {
   id: string;
   tipo: 'imagen' | 'video';
+  url: string;
 }
 
 export interface Report {

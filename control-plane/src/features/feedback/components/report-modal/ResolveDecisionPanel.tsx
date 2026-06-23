@@ -23,6 +23,18 @@ export function ResolveDecisionPanel({
               role="radio"
               aria-checked={active}
               onClick={() => onDecision(value)}
+              onMouseEnter={e => {
+                if (!active) {
+                  e.currentTarget.style.background = 'var(--surface2)';
+                  e.currentTarget.style.borderColor = 'var(--text4)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!active) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                }
+              }}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
