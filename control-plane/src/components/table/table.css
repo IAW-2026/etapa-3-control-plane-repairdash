@@ -34,7 +34,7 @@
     display: grid !important;
     grid-template-columns: 1fr;
     align-items: stretch !important;
-    gap: 10px !important;
+    gap: 14px !important;
     margin: 16px 0 14px !important;
   }
   .table-search-filter {
@@ -57,34 +57,32 @@
   }
   .table-date-filters {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: 1fr;
+    gap: 14px;
     width: 100%;
   }
   .table-date-field {
     align-items: stretch;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
   }
   .table-date-label {
     padding-left: 2px;
+    font-size: 12.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
   }
   .table-date-input {
     width: 100%;
     min-width: 0;
     font-size: 13px;
+    min-height: 46px;
   }
   .table-clear-filter {
     width: 100%;
   }
   .table-results-count {
     justify-self: center;
-  }
-}
-
-@media (max-width: 380px) {
-  .table-date-filters {
-    grid-template-columns: 1fr;
   }
 }
 
