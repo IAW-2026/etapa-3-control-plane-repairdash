@@ -16,6 +16,7 @@ export function PromoModal() {
   const { state, dispatch, closeModal, savePromo } = useStore();
   const { services, loading } = useServiceTypes();
   const [filtroError, setFiltroError] = useState(false);
+  const [precioMinimoError, setPrecioMinimoError] = useState<string | null>(null);
 
   const { modal, form, formError } = state;
   if (modal?.type !== 'promo') return null;
@@ -35,8 +36,29 @@ export function PromoModal() {
     setFormField('categorias', cs);
   };
 
+  const validatePrecioMinimo = (): boolean => {
+    if (tipo !== '$') {
+      setPrecioMinimoError(null);
+      return true;
+    }
+    const valor = Number(form.valor);
+    const precioMinimo = Number(form.precioMinimo);
+
+    if (form.precioMinimo == null || form.precioMinimo === '' as unknown) {
+      setPrecioMinimoError('El precio mínimo es obligatorio cuando el descuento es un monto fijo.');
+      return false;
+    }
+    if (precioMinimo < valor) {
+      setPrecioMinimoError(`El precio mínimo debe ser mayor o igual al descuento ($${valor}).`);
+      return false;
+    }
+    setPrecioMinimoError(null);
+    return true;
+  };
+
   const handleSave = () => {
     if (filtroError) return;
+    if (!validatePrecioMinimo()) return;
     savePromo();
   };
 
@@ -58,7 +80,13 @@ export function PromoModal() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <FormField label="Tipo de descuento">
-          <SegmentedDiscountType value={tipo} onChange={value => setFormField('tipoDescuento', value)} />
+          <SegmentedDiscountType
+            value={tipo}
+            onChange={value => {
+              setFormField('tipoDescuento', value);
+              setPrecioMinimoError(null);
+            }}
+          />
         </FormField>
         <FormField label={`Valor (${tipo === '$' ? 'ARS' : '%'})`}>
           <input type="number" value={form.valor == null ? '' : String(form.valor)} onChange={setField('valor')} className="input-base" />
@@ -72,8 +100,31 @@ export function PromoModal() {
         onChange={(key, value) => setFormField(key, value)}
       />
 
-      <FormField label={<span>Precio minimo <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(opcional, ARS)</span></span>}>
-        <input type="number" value={form.precioMinimo == null ? '' : String(form.precioMinimo)} onChange={setField('precioMinimo')} className="input-base" style={{ maxWidth: 200 }} />
+      <FormField
+        label={
+          <span>
+            Precio minimo{' '}
+            <span style={{ color: tipo === '$' ? 'var(--danger)' : 'var(--text3)', fontWeight: 400 }}>
+              {tipo === '$' ? '(requerido, ARS)' : '(opcional, ARS)'}
+            </span>
+          </span>
+        }
+      >
+        <input
+          type="number"
+          value={form.precioMinimo == null ? '' : String(form.precioMinimo)}
+          onChange={e => {
+            setField('precioMinimo')(e);
+            setPrecioMinimoError(null);
+          }}
+          className="input-base"
+          style={{ maxWidth: 200 }}
+        />
+        {precioMinimoError && (
+          <span style={{ fontSize: 12.5, color: 'var(--danger)', marginTop: 4, display: 'block' }}>
+            {precioMinimoError}
+          </span>
+        )}
       </FormField>
 
       <PromotionFlags
