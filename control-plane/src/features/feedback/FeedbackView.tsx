@@ -29,7 +29,7 @@ export function FeedbackView({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const updateParam = (key: 'q' | 'status' | 'resFilter', value: string) => {
+  const updateParam = (key: 'q' | 'status', value: string) => {
     const next = setListFilterParam(new URLSearchParams(searchParams.toString()), key, value);
     router.replace(paramsHref(pathname, next));
   };

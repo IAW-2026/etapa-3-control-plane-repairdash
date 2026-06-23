@@ -9,7 +9,7 @@ export function FeedbackFilters({
 }: {
   filters: ListFilters;
   total: number;
-  onUpdate: (key: 'q' | 'status' | 'resFilter', value: string) => void;
+  onUpdate: (key: 'q' | 'status', value: string) => void;
 }) {
   const pathname = usePathname();
 
@@ -28,11 +28,6 @@ export function FeedbackFilters({
         <option value="CREADO">Creado</option>
         <option value="PRUEBAS_AGREGADAS">En revision</option>
         <option value="RESUELTO">Resuelto</option>
-      </select>
-      <select aria-label="Filtrar por resolución" value={filters.resFilter} onChange={e => onUpdate('resFilter', e.target.value)} className="select-base">
-        <option value="ALL">Toda resolucion</option>
-        <option value="SinResolver">Sin resolver</option>
-        <option value="Resuelto">Resuelto</option>
       </select>
       <span style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--text3)' }}>
         {total} {total === 1 ? 'reporte' : 'reportes'}
