@@ -367,6 +367,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       usoUnico:      !!form.usoUnico,
       fechaInicio:   toIso(form.fechaInicio, false) || new Date().toISOString(),
       fechaFin:      toIso(form.fechaFin, true),
+      filtroUsuarios: form.filtroUsuarios ?? null,
     };
 
     dispatch({ type: 'SET_SAVING', payload: true });
@@ -401,7 +402,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         const json = await res.json();
         const nextId = Math.max(0, ...data.promotions.map(p => p.id)) + 1;
-        const nueva = json.data || { id: nextId, eliminada: false, filtroUsuarios: null, ...payload };
+        const nueva = json.data || { id: nextId, eliminada: false, ...payload };
         dispatch({ type: 'UPDATE_DATA', payload: { promotions: [nueva, ...data.promotions] }});
         dispatch({ type: 'SET_MODAL', payload: null });
         showToast(`Se creó la promoción ${nombre}`);
