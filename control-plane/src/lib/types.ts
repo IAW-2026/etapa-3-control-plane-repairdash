@@ -115,6 +115,7 @@ export interface ReportTrabajo {
 export interface Prueba {
   id: string;
   tipo: 'imagen' | 'video';
+  url: string;
 }
 
 export interface Report {
@@ -226,4 +227,27 @@ export interface FormState {
   usoUnico?: boolean;
   fechaInicio?: string;
   fechaFin?: string;
+  filtroUsuarios?: FiltroUsuarios | null;
 }
+
+export type FiltroUsuarios = {
+  idsEspecificos?: string[];
+  registradosDespuesDe?: string;
+  registradosAntesDe?: string;
+  minimoUsos?: number;
+  maximoUsos?: number;
+};
+
+export type Usuario = {
+  id: string;
+  nombre: string;
+  fechaRegistro: string;
+};
+
+export type Modo = 'todos' | 'filtros' | 'especificos';
+
+export type ErroresFiltro = {
+  despues: string;
+  antes: string;
+  usos: string;
+};

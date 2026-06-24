@@ -5,7 +5,6 @@ export const LIST_FILTER_MIN_DATE = '2020-01-01';
 export interface ListFilters {
   q: string;
   status: string;
-  resFilter: string;
   dateFrom: string;
   dateTo: string;
   page: number;
@@ -14,7 +13,6 @@ export interface ListFilters {
 export const DEFAULT_LIST_FILTERS: ListFilters = {
   q: '',
   status: 'ALL',
-  resFilter: 'ALL',
   dateFrom: '',
   dateTo: '',
   page: 1,
@@ -39,7 +37,6 @@ export function parseListFilters(searchParams: SearchParamInput = {}): ListFilte
   return {
     q: first(searchParams.q).trim(),
     status: first(searchParams.status) || 'ALL',
-    resFilter: first(searchParams.resFilter) || 'ALL',
     dateFrom: parseDateFilter(first(searchParams.from)),
     dateTo: parseDateFilter(first(searchParams.to)),
     page: parsePage(first(searchParams.page)),
@@ -50,7 +47,6 @@ export function filtersToSearchParams(filters: ListFilters): URLSearchParams {
   const sp = new URLSearchParams();
   if (filters.q) sp.set('q', filters.q);
   if (filters.status && filters.status !== 'ALL') sp.set('status', filters.status);
-  if (filters.resFilter && filters.resFilter !== 'ALL') sp.set('resFilter', filters.resFilter);
   if (filters.dateFrom) sp.set('from', filters.dateFrom);
   if (filters.dateTo) sp.set('to', filters.dateTo);
   if (filters.page > 1) sp.set('page', String(filters.page));
@@ -59,7 +55,7 @@ export function filtersToSearchParams(filters: ListFilters): URLSearchParams {
 
 export function setListFilterParam(
   current: URLSearchParams,
-  key: 'q' | 'status' | 'resFilter' | 'from' | 'to' | 'page',
+  key: 'q' | 'status' | 'from' | 'to' | 'page',
   value: string | number,
   resetPage = true,
 ): URLSearchParams {

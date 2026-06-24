@@ -256,3 +256,13 @@
 
 /* Readable placeholders (default browser placeholder fails contrast) */
 ::placeholder { color: var(--text3); opacity: 1; }
+
+/* ── Hide number input spinners ── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}

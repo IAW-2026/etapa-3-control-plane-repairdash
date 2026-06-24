@@ -77,6 +77,18 @@ Lista paginada de reportes con su estado operativo.
       "idTrabajo": "string",
       "idReportante": "string",
       "idReportado": "string",
+      "reportante": {
+        "id": "uuid",
+        "nombre": "string",
+        "apellido": "string",
+        "rol": "rider | driver"
+      },
+      "reportado": {
+        "id": "uuid",
+        "nombre": "string",
+        "apellido": "string",
+        "rol": "rider | driver"
+      },
       "descripcion": "string",
       "estado": "CREADO | PRUEBAS_AGREGADAS | RESUELTO",
       "resolucion": "SinResolver | Resuelto",
