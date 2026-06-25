@@ -1,0 +1,150 @@
+.table-date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.table-date-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.table-date-label {
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 700;
+}
+.table-date-input {
+  min-width: 132px;
+  min-height: 38px;
+  color: var(--text);
+  color-scheme: dark;
+}
+.table-date-input::-webkit-date-and-time-value {
+  color: var(--text);
+  text-align: left;
+}
+.table-date-input::-webkit-calendar-picker-indicator {
+  opacity: .75;
+  filter: invert(1);
+}
+
+@media (max-width: 640px) {
+  .table-filters {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    align-items: stretch !important;
+    gap: 14px !important;
+    margin: 16px 0 14px !important;
+  }
+  .table-search-filter {
+    width: 100%;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+  .table-search-filter > div {
+    gap: 8px !important;
+  }
+  .table-search-filter input,
+  .table-search-filter button,
+  .table-clear-filter,
+  .table-date-input {
+    min-height: 42px;
+  }
+  .table-search-filter button {
+    flex-shrink: 0;
+    padding-inline: 14px !important;
+  }
+  .table-date-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    width: 100%;
+    justify-items: stretch;
+  }
+  .table-date-field {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .table-date-label {
+    padding-left: 2px;
+    font-size: 12.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .table-date-input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
+    min-height: 46px;
+  }
+  .table-clear-filter {
+    display: block;
+    justify-self: stretch;
+    width: 100%;
+  }
+  .table-results-count {
+    justify-self: center;
+  }
+}
+
+@media (max-width: 1024px) {
+  .table-wrap { overflow-x: visible !important; }
+  .table-wrap table,
+  .table-wrap thead,
+  .table-wrap tbody,
+  .table-wrap tr,
+  .table-wrap th,
+  .table-wrap td {
+    display: block;
+  }
+  .table-wrap thead { display: none; }
+  .table-wrap tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--surface2);
+  }
+  .table-wrap tr {
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 4px 14px;
+    background: var(--surface);
+  }
+  .table-wrap tr:hover { background: var(--surface2); }
+  .table-wrap td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: none;
+    white-space: normal !important;
+  }
+  .table-wrap td:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+  }
+  .table-wrap td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text3);
+    white-space: nowrap;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .table-wrap td:not([data-label]) {
+    justify-content: flex-end;
+  }
+  .table-wrap td:not([data-label])::before {
+    display: none;
+  }
+  .table-wrap td > div {
+    word-break: break-all;
+  }
+}

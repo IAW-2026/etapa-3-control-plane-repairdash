@@ -1,9 +1,22 @@
-# control-plane
+# Control Plane
 
-Aplicación **Control Plane** del [Proyecto IAW 2026](https://iaw-2026.github.io/proyecto/) — comisión `<!-- completar -->`.
+Aplicación web de **súper administración global** del ecosistema RepairDash. Centraliza en un solo panel la consulta y gestión operativa de las apps de Riders, Drivers, Payments, Feedback y Promociones.
 
-Panel administrativo centralizado (Etapa 3): gestión unificada de todas las apps, activación/desactivación de usuarios y resolución de disputas.
+## Deploy
 
----
+[https://etapa-3-control-plane-repairdash.vercel.app/](https://etapa-3-control-plane-repairdash.vercel.app/)
 
-Enunciado completo: <https://iaw-2026.github.io/proyecto/>
+## Acceso
+
+El panel usa Clerk y solo permite entrar a usuarios con rol `super-admin`.
+
+| Tipo de usuario | Acceso |
+| --- | --- |
+| Súper administrador | Usuario: `controlplane+clerk_test@iaw.com` / Contraseña: `Iawuser#` |
+| Usuario final | No aplica dentro de este panel. Riders, drivers y otros usuarios finales se gestionan desde sus apps correspondientes; si intentan entrar al Control Plane sin rol `super-admin`, son redirigidos a `/unauthorized`. |
+
+## Resumen
+
+Desde el Control Plane se pueden ver métricas generales, consultar tablas con búsqueda/filtros/paginación y ejecutar acciones administrativas como actualizar comisiones, administrar promociones, modificar clientes, cambiar estados de trabajadores y resolver disputas.
+
+Más detalle funcional y técnico: [control-plane/docs/README-detallado.md](control-plane/docs/README-detallado.md).
