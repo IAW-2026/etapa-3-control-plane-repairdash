@@ -10,7 +10,7 @@ function normalize(j: Record<string, unknown>): Job {
     id:       (j.id as string) || '',
     estado:   (j.estado as string) || '',
     rider:    rider  ? `${rider.nombre}  ${rider.apellido}`.trim()  : '—',
-    driver:   driver ? `${driver.nombre} ${driver.apellido}`.trim() : null,
+    driver:   driver ? (driver.nombre as string) || null : null,
     servicio: svc    ? (svc.nombre as string) : '—',
     direccion:(j.direccion as string) || '—',
     monto:    (j.montoEstimado as number) || 0,
